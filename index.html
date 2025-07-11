@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    
+    <title>🚀 Space Invaders - Defend Earth!</title>
+    <meta name="description" content="Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter!">
+    
+    <!-- Icons and PWA -->
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    <link rel="apple-touch-icon" href="assets/images/icon-192x192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    
+    <!-- Preload key resources -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js" as="script">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <h1>🚀 SPACE INVADERS</h1>
+            <div class="loading-spinner"></div>
+            <p id="loading-text">Loading game assets...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="game-container" style="display: none;">
+        <!-- Game Canvas will be inserted here by Phaser -->
+    </div>
+
+    <!-- Mobile Touch Controls Overlay -->
+    <div id="touch-controls" class="touch-controls" style="display: none;">
+        <!-- Virtual buttons for alternative control scheme -->
+        <div class="control-buttons">
+            <button id="btn-left" class="control-btn btn-left" data-action="left">
+                <span>◀</span>
+            </button>
+            <button id="btn-right" class="control-btn btn-right" data-action="right">
+                <span>▶</span>
+            </button>
+            <button id="btn-fire" class="control-btn btn-fire" data-action="fire">
+                <span>🔥</span>
+            </button>
+        </div>
+        
+        <!-- Touch zones for gesture control -->
+        <div class="touch-zones">
+            <div id="movement-zone" class="movement-zone"></div>
+            <div id="fire-zone" class="fire-zone"></div>
+        </div>
+    </div>
+
+    <!-- Game UI Overlay -->
+    <div id="game-ui" class="game-ui" style="display: none;">
+        <div class="hud">
+            <div class="hud-left">
+                <div class="score-display">
+                    <label>SCORE</label>
+                    <span id="score">0</span>
+                </div>
+                <div class="high-score-display">
+                    <label>HIGH SCORE</label>
+                    <span id="high-score">0</span>
+                </div>
+            </div>
+            
+            <div class="hud-center">
+                <div class="wave-display">
+                    <label>WAVE</label>
+                    <span id="wave">1</span>
+                </div>
+            </div>
+            
+            <div class="hud-right">
+                <div class="lives-display">
+                    <label>LIVES</label>
+                    <div id="lives-container" class="lives-container">
+                        <span class="life">🚀</span>
+                        <span class="life">🚀</span>
+                        <span class="life">🚀</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu" class="mobile-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+
+    <!-- Game Menu Overlay -->
+    <div id="game-menu" class="game-menu" style="display: none;">
+        <div class="menu-content">
+            <h2>🚀 SPACE INVADERS</h2>
+            <div class="menu-buttons">
+                <button id="btn-play" class="menu-btn primary">PLAY</button>
+                <button id="btn-settings" class="menu-btn">SETTINGS</button>
+                <button id="btn-help" class="menu-btn">HOW TO PLAY</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="settings-panel" style="display: none;">
+        <div class="settings-content">
+            <h3>⚙️ SETTINGS</h3>
+            
+            <div class="setting-group">
+                <label>Control Type (Mobile)</label>
+                <select id="control-type">
+                    <option value="gesture">Touch & Drag</option>
+                    <option value="buttons">Virtual Buttons</option>
+                </select>
+            </div>
+            
+            <div class="setting-group">
+                <label>Sound Effects</label>
+                <input type="range" id="sfx-volume" min="0" max="100" value="70">
+                <span id="sfx-value">70%</span>
+            </div>
+            
+            <div class="setting-group">
+                <label>Music</label>
+                <input type="range" id="music-volume" min="0" max="100" value="50">
+                <span id="music-value">50%</span>
+            </div>
+            
+            <div class="setting-group">
+                <label>Haptic Feedback</label>
+                <input type="checkbox" id="haptic-feedback" checked>
+            </div>
+            
+            <div class="setting-buttons">
+                <button id="btn-save-settings" class="menu-btn primary">SAVE</button>
+                <button id="btn-cancel-settings" class="menu-btn">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Panel -->
+    <div id="help-panel" class="help-panel" style="display: none;">
+        <div class="help-content">
+            <h3>🎮 HOW TO PLAY</h3>
+            
+            <div class="help-section">
+                <h4>Desktop Controls:</h4>
+                <ul>
+                    <li><strong>Move:</strong> Arrow keys or A/D</li>
+                    <li><strong>Fire:</strong> Spacebar</li>
+                    <li><strong>Pause:</strong> P or ESC</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h4>Mobile Controls:</h4>
+                <ul>
+                    <li><strong>Move:</strong> Touch and drag anywhere</li>
+                    <li><strong>Fire:</strong> Tap anywhere (quick tap)</li>
+                    <li><strong>Alt:</strong> Use virtual buttons</li>
+                </ul>
+            </div>
+            
+            <div class="help-section">
+                <h4>Scoring:</h4>
+                <ul>
+                    <li>Green aliens: <strong>10 points</strong></li>
+                    <li>Yellow aliens: <strong>20 points</strong></li>
+                    <li>Red aliens: <strong>30 points</strong></li>
+                    <li>Bonus UFO: <strong>500 points</strong></li>
+                    <li>Extra life every <strong>10,000 points</strong></li>
+                </ul>
+            </div>
+            
+            <button id="btn-close-help" class="menu-btn primary">GOT IT!</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over" class="game-over" style="display: none;">
+        <div class="game-over-content">
+            <h2>GAME OVER</h2>
+            <div class="final-score">
+                <label>FINAL SCORE</label>
+                <span id="final-score">0</span>
+            </div>
+            <div class="game-over-buttons">
+                <button id="btn-play-again" class="menu-btn primary">PLAY AGAIN</button>
+                <button id="btn-main-menu" class="menu-btn">MAIN MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {
+                    // Service worker registration failed, but game still works
+                });
+            });
+        }
+    </script>
+</body>
+</html> 
