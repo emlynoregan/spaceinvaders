@@ -1,5 +1,6 @@
 // Space Invaders - Main Application
 import { getAdaptiveConfig, deviceUtils } from './config.js';
+import { FullscreenHelper } from './mobile/FullscreenHelper.js';
 
 class SpaceInvadersApp {
     constructor() {
@@ -8,6 +9,20 @@ class SpaceInvadersApp {
         this.isMobile = deviceUtils.isMobile();
         this.currentSettings = this.loadSettings();
         this.isGameLoaded = false;
+        
+        // Initialize fullscreen helper for mobile
+        if (this.isMobile) {
+            this.fullscreenHelper = new FullscreenHelper();
+            
+            // Listen for orientation changes to toggle fullscreen
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    if (this.fullscreenHelper && this.isGameLoaded) {
+                        this.fullscreenHelper.autoFullscreenInLandscape();
+                    }
+                }, 500);
+            });
+        }
         
         // Debug logging
         console.log('🚀 SpaceInvadersApp constructor');
@@ -211,6 +226,12 @@ class SpaceInvadersApp {
         this.showGameUI();
         this.showTouchControls();
         
+        // Enable fullscreen mode on mobile
+        if (this.isMobile && this.fullscreenHelper) {
+            this.fullscreenHelper.markUserInteraction();
+            this.fullscreenHelper.autoFullscreenInLandscape();
+        }
+        
         // Hide wave announcement in case it was showing
         this.hideWaveAnnouncement();
         
@@ -286,6 +307,11 @@ class SpaceInvadersApp {
             
             this.isGameLoaded = true;
             console.log('✅ Phaser game loaded successfully');
+            
+            // Auto-fullscreen if in landscape
+            if (this.isMobile && this.fullscreenHelper) {
+                this.fullscreenHelper.autoFullscreenInLandscape();
+            }
             
         } catch (error) {
             console.error('❌ Failed to load Phaser game:', error);
