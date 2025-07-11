@@ -208,9 +208,9 @@ export class TouchControls {
                 
             case 'fire':
                 if (pressed) {
-                    this.gameScene?.startFiring?.();
-                } else {
-                    this.gameScene?.stopFiring?.();
+                    // Fire when button is pressed (not when released)
+                    this.gameScene?.firePlayerBullet?.();
+                    this.triggerHapticFeedback('medium');
                 }
                 break;
         }

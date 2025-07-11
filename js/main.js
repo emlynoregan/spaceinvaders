@@ -146,110 +146,15 @@ class SpaceInvadersApp {
         
         if (!touchControls) return;
         
-        if (this.currentSettings.controlType === 'buttons') {
-            this.setupVirtualButtons();
-        } else {
-            this.setupGestureControls();
-        }
-        
+        // Show the touch controls container
         touchControls.classList.add('active');
+        
+        // Let the GameScene handle the actual touch control setup
+        // This will be done when the game starts and the scene is created
+        console.log('📱 Touch controls container activated');
     }
     
-    setupVirtualButtons() {
-        const controlButtons = document.querySelector('.control-buttons');
-        const touchZones = document.querySelector('.touch-zones');
-        
-        controlButtons?.classList.add('visible');
-        touchZones?.classList.remove('active');
-        
-        // Bind virtual button events
-        const btnLeft = document.getElementById('btn-left');
-        const btnRight = document.getElementById('btn-right');
-        const btnFire = document.getElementById('btn-fire');
-        
-        this.bindVirtualButtonEvents(btnLeft, 'left');
-        this.bindVirtualButtonEvents(btnRight, 'right');
-        this.bindVirtualButtonEvents(btnFire, 'fire');
-    }
-    
-    setupGestureControls() {
-        const controlButtons = document.querySelector('.control-buttons');
-        const touchZones = document.querySelector('.touch-zones');
-        
-        controlButtons?.classList.remove('visible');
-        touchZones?.classList.add('active');
-        
-        // Bind gesture events
-        const gameContainer = document.getElementById('game-container');
-        this.bindGestureEvents(gameContainer);
-    }
-    
-    bindVirtualButtonEvents(button, action) {
-        if (!button) return;
-        
-        const handleStart = (e) => {
-            e.preventDefault();
-            button.classList.add('pressed');
-            console.log(`Mobile input: ${action} pressed`);
-            this.triggerHapticFeedback('light');
-        };
-        
-        const handleEnd = (e) => {
-            e.preventDefault();
-            button.classList.remove('pressed');
-            console.log(`Mobile input: ${action} released`);
-        };
-        
-        button.addEventListener('touchstart', handleStart, { passive: false });
-        button.addEventListener('touchend', handleEnd, { passive: false });
-        button.addEventListener('touchcancel', handleEnd, { passive: false });
-    }
-    
-    bindGestureEvents(container) {
-        if (!container) return;
-        
-        let touchStartX = 0;
-        let touchStartTime = 0;
-        let isDragging = false;
-        
-        const handleTouchStart = (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartTime = Date.now();
-            isDragging = false;
-            
-            // Show touch feedback
-            this.showTouchFeedback(touch.clientX, touch.clientY);
-        };
-        
-        const handleTouchMove = (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const deltaX = Math.abs(touch.clientX - touchStartX);
-            
-            if (deltaX > this.config.mobile.gestureThreshold) {
-                isDragging = true;
-                console.log('Player moving to:', touch.clientX);
-            }
-        };
-        
-        const handleTouchEnd = (e) => {
-            e.preventDefault();
-            const touchDuration = Date.now() - touchStartTime;
-            
-            // If it was a quick tap and not a drag, fire
-            if (touchDuration < this.config.mobile.fireTapDuration && !isDragging) {
-                console.log('Player firing!');
-                this.triggerHapticFeedback('medium');
-            }
-        };
-        
-        container.addEventListener('touchstart', handleTouchStart, { passive: false });
-        container.addEventListener('touchmove', handleTouchMove, { passive: false });
-        container.addEventListener('touchend', handleTouchEnd, { passive: false });
-        container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-    }
+
     
     showTouchFeedback(x, y) {
         const feedback = document.createElement('div');
@@ -451,8 +356,23 @@ class SpaceInvadersApp {
     
     showTouchControls() {
         const touchControls = document.getElementById('touch-controls');
-        if (touchControls) {
+        if (touchControls && this.isMobile) {
             touchControls.style.display = 'block';
+            touchControls.classList.add('active');
+            
+            // Set up control type based on user settings
+            const controlButtons = document.querySelector('.control-buttons');
+            const touchZones = document.querySelector('.touch-zones');
+            
+            if (this.currentSettings.controlType === 'buttons') {
+                controlButtons?.classList.add('visible');
+                touchZones?.classList.remove('active');
+                console.log('📱 Virtual buttons enabled');
+            } else {
+                controlButtons?.classList.remove('visible');
+                touchZones?.classList.add('active');
+                console.log('📱 Gesture controls enabled');
+            }
         }
     }
     
@@ -650,11 +570,16 @@ class SpaceInvadersApp {
     
     updateMobileControls() {
         if (this.isMobile) {
-            if (this.currentSettings.controlType === 'buttons') {
-                this.setupVirtualButtons();
-            } else {
-                this.setupGestureControls();
+            // Update touch controls configuration if TouchControls system is active
+            if (this.game) {
+                const gameScene = this.game.scene.getScene('GameScene');
+                if (gameScene && gameScene.touchControls) {
+                    gameScene.touchControls.setControlType(this.currentSettings.controlType);
+                }
             }
+            
+            // Update the visual appearance
+            this.showTouchControls();
         }
     }
     

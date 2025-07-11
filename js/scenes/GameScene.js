@@ -404,8 +404,19 @@ export class GameScene extends Phaser.Scene {
     setupTouchControls() {
         // Import and setup touch controls
         import('../mobile/TouchControls.js').then(({ TouchControls }) => {
+            console.log('🎮 Setting up TouchControls for mobile...');
+            
+            // Get user settings from the app
+            const userSettings = this.app?.currentSettings || {};
+            const controlType = userSettings.controlType || this.config.mobile.touchControlType;
+            
             this.touchControls = new TouchControls(this.config, this);
+            this.touchControls.setControlType(controlType);
             this.touchControls.activate();
+            
+            console.log(`📱 TouchControls activated with type: ${controlType}`);
+        }).catch(error => {
+            console.error('❌ Failed to load TouchControls:', error);
         });
     }
     
