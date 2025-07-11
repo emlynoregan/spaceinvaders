@@ -278,31 +278,29 @@ class SpaceInvadersApp {
     
     // Game control methods
     async startGame() {
-        console.log('🎮 Starting game...');
+        this.hideLoadingScreen();
         this.hideAllMenus();
         this.showGameUI();
+        this.showTouchControls();
         
-        if (this.isMobile) {
-            this.showTouchControls();
-        }
+        // Hide wave announcement in case it was showing
+        this.hideWaveAnnouncement();
         
-        // Load Phaser game if not already loaded
-        if (!this.isGameLoaded) {
-            await this.loadPhaserGame();
-        }
-        
-        // Stop any running scenes and start fresh game scene
-        if (this.game) {
-            this.game.scene.stop('MenuScene');
-            this.game.scene.start('GameScene');
+        try {
+            // Initialize or restart Phaser game
+            if (!this.game) {
+                await this.loadPhaserGame();
+            } else {
+                // Restart the game scene
+                this.game.scene.stop('MenuScene');
+                this.game.scene.stop('GameOverScene');
+                this.game.scene.start('GameScene');
+            }
             
-            // Activate audio context with user gesture
-            setTimeout(() => {
-                const gameScene = this.game.scene.getScene('GameScene');
-                if (gameScene && gameScene.audioContext && gameScene.audioContext.state === 'suspended') {
-                    gameScene.audioContext.resume();
-                }
-            }, 100);
+            console.log('🎮 Game started successfully');
+        } catch (error) {
+            console.error('Failed to start game:', error);
+            this.showMainMenu();
         }
     }
     
@@ -399,7 +397,10 @@ class SpaceInvadersApp {
     showMainMenu() {
         this.hideLoadingScreen();
         this.hideAllMenus();
-        this.showGameUI(); // Show the game container
+        
+        // Hide the game UI when showing main menu
+        document.getElementById('game-ui').style.display = 'none';
+        document.getElementById('game-container').style.display = 'block'; // Keep game container for Phaser canvas
         
         // Load and display current high score
         const currentHighScore = parseInt(localStorage.getItem('spaceinvaders_highscore') || '0');
@@ -410,8 +411,10 @@ class SpaceInvadersApp {
             this.game.scene.start('MenuScene');
         }
         
-        // Also show HTML menu overlay
+        // Show HTML menu overlay
         document.getElementById('game-menu').style.display = 'flex';
+        
+        console.log('🏠 Returned to main menu');
     }
     
     hideAllMenus() {
@@ -419,6 +422,7 @@ class SpaceInvadersApp {
         document.getElementById('settings-panel').style.display = 'none';
         document.getElementById('help-panel').style.display = 'none';
         document.getElementById('game-over').style.display = 'none';
+        document.getElementById('wave-announcement').style.display = 'none';
     }
     
     showGameUI() {
@@ -469,6 +473,23 @@ class SpaceInvadersApp {
         document.getElementById('game-over').style.display = 'none';
     }
     
+    // Wave announcement methods
+    showWaveAnnouncement(waveNumber) {
+        const waveNumberElement = document.getElementById('wave-number');
+        waveNumberElement.textContent = `WAVE ${waveNumber}`;
+        document.getElementById('wave-announcement').style.display = 'flex';
+        
+        // Add haptic feedback for mobile devices
+        this.triggerHapticFeedback('medium');
+        
+        console.log(`🌊 Wave ${waveNumber} announcement displayed`);
+    }
+    
+    hideWaveAnnouncement() {
+        document.getElementById('wave-announcement').style.display = 'none';
+        console.log('🌊 Wave announcement hidden');
+    }
+
     // Game UI update methods
     updateScore(score) {
         const validScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;

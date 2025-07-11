@@ -539,4 +539,89 @@ canvas {
     .hud {
         font-size: 0.8rem;
     }
+}
+
+/* Wave Announcement Overlay */
+.wave-announcement {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 700;
+    backdrop-filter: blur(5px);
+}
+
+.wave-announcement-content {
+    text-align: center;
+    color: #00ff00;
+    animation: waveZoomIn 0.5s ease-out;
+}
+
+.wave-number {
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: bold;
+    text-shadow: 0 0 30px #00ff00, 0 0 60px #00ff00;
+    margin-bottom: 1rem;
+    letter-spacing: 0.2em;
+    animation: waveGlow 2s ease-in-out infinite alternate;
+}
+
+.wave-subtitle {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    color: #00cc00;
+    margin-bottom: 2rem;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 10px #00cc00;
+}
+
+.wave-progress {
+    width: 300px;
+    height: 4px;
+    background: rgba(0, 255, 0, 0.2);
+    border-radius: 2px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.wave-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff00, #00cc00);
+    border-radius: 2px;
+    width: 0;
+    animation: waveProgress 2s linear forwards;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+@keyframes waveZoomIn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes waveGlow {
+    0% {
+        text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+    }
+    100% {
+        text-shadow: 0 0 30px #00ff00, 0 0 60px #00ff00, 0 0 80px #00ff00;
+    }
+}
+
+@keyframes waveProgress {
+    0% {
+        width: 0;
+    }
+    100% {
+        width: 100%;
+    }
 } 

@@ -58,8 +58,8 @@ export const gameConfig = {
         fireRateIncreasePerWave: 1.3, // 30% more firing each wave  
         maxSpeed: 100, // Minimum delay between alien moves (was 300, lower = faster)
         minFireDelay: 500,
-        baseFiringChance: 0.08, // Starting firing chance (8%)
-        maxFiringChance: 0.25   // Cap at 25% firing chance per move
+        baseFiringChance: 0.16, // Starting firing chance (16% - doubled from 8%)
+        maxFiringChance: 0.5    // Cap at 50% firing chance per move (doubled from 25%)
     },
     
     // Lives and scoring

@@ -21,6 +21,7 @@ export class GameScene extends Phaser.Scene {
             wave: 1,
             isGameOver: false,
             isPaused: false,
+            isTransitioningWave: false, // Prevent multiple wave transitions
             nextExtraLifeScore: this.config.scoring.extraLifeScore, // Track next extra life threshold
             alienFiringChance: this.config.difficulty.baseFiringChance // Dynamic firing frequency
         };
@@ -525,6 +526,7 @@ export class GameScene extends Phaser.Scene {
     
     alienInvasionGameOver() {
         this.gameState.isGameOver = true;
+        this.gameState.isTransitioningWave = false; // Reset transition flag for clean restart
         
         // Stop all audio
         if (this.audioContext) {
@@ -543,11 +545,48 @@ export class GameScene extends Phaser.Scene {
     alienFire() {
         if (this.aliens.children.size === 0) return;
         
-        // Use dynamic firing chance that increases with each wave
+        // Create weighted firing system based on proximity to player
+        const playerX = this.player.x;
+        const playerY = this.player.y;
+        
+        // Calculate firing weights for each alien based on proximity
+        const alienWeights = [];
+        this.aliens.children.entries.forEach(alien => {
+            const distanceY = Math.abs(playerY - alien.y); // Vertical distance (most important)
+            const distanceX = Math.abs(playerX - alien.x); // Horizontal distance (less important)
+            
+            // Closer aliens (smaller distance) get higher weight
+            // Y-distance is weighted more heavily than X-distance
+            const proximityScore = 1000 - (distanceY * 0.8 + distanceX * 0.2);
+            const weight = Math.max(1, proximityScore / 100); // Ensure minimum weight of 1
+            
+            alienWeights.push({ alien, weight });
+        });
+        
+        // Calculate total weight for probability distribution
+        const totalWeight = alienWeights.reduce((sum, item) => sum + item.weight, 0);
+        
+        // Use dynamic firing chance with weighted selection
         if (Math.random() < this.gameState.alienFiringChance) {
-            const randomAlien = Phaser.Utils.Array.GetRandom(this.aliens.children.entries);
-            this.fireAlienBullet(randomAlien.x, randomAlien.y);
-            console.log(`👾 Alien fired! (${(this.gameState.alienFiringChance * 100).toFixed(1)}% chance)`); // Debug to track firing
+            // Select alien based on weighted probability
+            let randomValue = Math.random() * totalWeight;
+            let selectedAlien = null;
+            
+            for (const { alien, weight } of alienWeights) {
+                randomValue -= weight;
+                if (randomValue <= 0) {
+                    selectedAlien = alien;
+                    break;
+                }
+            }
+            
+            // Fallback to random selection if weighted selection fails
+            if (!selectedAlien) {
+                selectedAlien = Phaser.Utils.Array.GetRandom(this.aliens.children.entries);
+            }
+            
+            this.fireAlienBullet(selectedAlien.x, selectedAlien.y);
+            console.log(`👾 Alien fired! (${(this.gameState.alienFiringChance * 100).toFixed(1)}% chance, proximity-weighted)`);
         }
     }
     
@@ -791,8 +830,9 @@ export class GameScene extends Phaser.Scene {
     }
     
     checkWaveComplete() {
-        if (this.aliens.children.size === 0 && !this.gameState.isGameOver) {
+        if (this.aliens.children.size === 0 && !this.gameState.isGameOver && !this.gameState.isTransitioningWave) {
             console.log('🎯 All aliens destroyed! Starting next wave...');
+            this.gameState.isTransitioningWave = true; // Set flag to prevent multiple calls
             this.nextWave();
         }
     }
@@ -801,7 +841,28 @@ export class GameScene extends Phaser.Scene {
         this.gameState.wave++;
         this.addScore(this.config.scoring.waveBonus);
         
+        // Only show wave announcement for Wave 2 and onwards (not the initial game start)
+        if (this.gameState.wave > 1) {
+            console.log(`🌊 Preparing Wave ${this.gameState.wave} announcement...`);
+            
+            // Show wave announcement
+            this.app?.showWaveAnnouncement?.(this.gameState.wave);
+            
+            // Wait 2 seconds, then start the actual wave
+            this.time.delayedCall(2000, () => {
+                this.startNewWave();
+            });
+        } else {
+            // For Wave 1 (initial game), start immediately without announcement
+            this.startNewWave();
+        }
+    }
+    
+    startNewWave() {
         console.log(`🌊 Wave ${this.gameState.wave} starting! Ramping up difficulty...`);
+        
+        // Hide wave announcement
+        this.app?.hideWaveAnnouncement?.();
         
         // Create new aliens (fresh formation)
         this.createAliens();
@@ -833,6 +894,9 @@ export class GameScene extends Phaser.Scene {
         
         this.updateUI();
         
+        // Reset transition flag now that new wave has started
+        this.gameState.isTransitioningWave = false;
+        
         console.log(`🔥 Wave ${this.gameState.wave} ready:`, {
             aliens: this.aliens.children.size,
             speed: `${this.alienMoveDelay}ms`,
@@ -848,6 +912,7 @@ export class GameScene extends Phaser.Scene {
     
     gameOver() {
         this.gameState.isGameOver = true;
+        this.gameState.isTransitioningWave = false; // Reset transition flag for clean restart
         
         // Stop all audio to prevent infinite sounds
         if (this.audioContext) {
