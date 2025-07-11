@@ -686,19 +686,48 @@ export class GameScene extends Phaser.Scene {
     }
     
     bulletHitBarrier(bullet, barrierPixel) {
-        console.log(`🛡️ Bullet hit barrier pixel - destroying it directly!`);
+        console.log(`🛡️ Bullet hit barrier pixel - guaranteed destruction + explosion!`);
         
         // Destroy the bullet
         bullet.setActive(false).setVisible(false);
         bullet.body.enable = false;
         
-        // Destroy the barrier pixel that was hit
-        barrierPixel.destroy();
+        // ALWAYS destroy the pixel that was actually hit first
+        const hitPixel = barrierPixel;
+        const impactX = hitPixel.x;
+        const impactY = hitPixel.y;
         
-        // Play barrier hit sound
-        this.playSound('barrier_hit');
+        // Start with the hit pixel
+        const pixelsToDestroy = [hitPixel];
         
-        console.log(`🛡️ Barrier pixel destroyed - simple and effective!`);
+        // Add nearby pixels for explosion effect (but exclude the hit pixel to avoid duplicates)
+        const explosionRadius = 8;
+        this.barriers.children.entries.forEach(pixel => {
+            if (pixel.active && pixel !== hitPixel) {
+                const distance = Phaser.Math.Distance.Between(impactX, impactY, pixel.x, pixel.y);
+                if (distance <= explosionRadius) {
+                    pixelsToDestroy.push(pixel);
+                }
+            }
+        });
+        
+        // Destroy all pixels with slight visual delay for explosion effect
+        pixelsToDestroy.forEach((pixel, index) => {
+            this.time.delayedCall(index * 5, () => {
+                if (pixel.active) {
+                    pixel.destroy();
+                }
+            });
+        });
+        
+        // Play appropriate sound
+        if (pixelsToDestroy.length > 1) {
+            this.playSound('barrier_destroy');
+        } else {
+            this.playSound('barrier_hit');
+        }
+        
+        console.log(`💥 Destroyed ${pixelsToDestroy.length} barrier pixels (hit + explosion)!`);
     }
     
     alienBulletHitPlayer(bullet, player) {
@@ -910,6 +939,13 @@ export class GameScene extends Phaser.Scene {
         this.gameState.isPaused = true;
         this.scene.pause();
         this.app?.showPauseMenu?.();
+        console.log('⏸️ Game paused');
+    }
+    
+    resumeGame() {
+        this.gameState.isPaused = false;
+        this.scene.resume();
+        console.log('▶️ Game resumed');
     }
     
     gameOver() {

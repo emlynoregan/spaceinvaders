@@ -89,12 +89,24 @@ class SpaceInvadersApp {
         const btnMainMenu = document.getElementById('btn-main-menu');
         const btnCloseHelp = document.getElementById('btn-close-help');
         
+        // Pause menu controls
+        const btnResume = document.getElementById('btn-resume');
+        const btnQuitGame = document.getElementById('btn-quit-game');
+        const btnConfirmQuit = document.getElementById('btn-confirm-quit');
+        const btnCancelQuit = document.getElementById('btn-cancel-quit');
+        
         btnPlay?.addEventListener('click', () => this.startGame());
         btnSettings?.addEventListener('click', () => this.showSettings());
         btnHelp?.addEventListener('click', () => this.showHelp());
         btnPlayAgain?.addEventListener('click', () => this.restartGame());
         btnMainMenu?.addEventListener('click', () => this.returnToMainMenu());
         btnCloseHelp?.addEventListener('click', () => this.hideHelp());
+        
+        // Pause menu events
+        btnResume?.addEventListener('click', () => this.resumeGame());
+        btnQuitGame?.addEventListener('click', () => this.showQuitConfirmation());
+        btnConfirmQuit?.addEventListener('click', () => this.confirmQuitGame());
+        btnCancelQuit?.addEventListener('click', () => this.hideQuitConfirmation());
     }
     
     bindSettingsEvents() {
@@ -428,6 +440,8 @@ class SpaceInvadersApp {
         document.getElementById('help-panel').style.display = 'none';
         document.getElementById('game-over').style.display = 'none';
         document.getElementById('wave-announcement').style.display = 'none';
+        document.getElementById('pause-menu').style.display = 'none';
+        document.getElementById('quit-confirmation').style.display = 'none';
     }
     
     showGameUI() {
@@ -500,6 +514,49 @@ class SpaceInvadersApp {
     hideWaveAnnouncement() {
         document.getElementById('wave-announcement').style.display = 'none';
         console.log('🌊 Wave announcement hidden');
+    }
+
+    // Pause menu methods
+    showPauseMenu() {
+        document.getElementById('pause-menu').style.display = 'flex';
+        console.log('⏸️ Pause menu shown');
+    }
+    
+    hidePauseMenu() {
+        document.getElementById('pause-menu').style.display = 'none';
+        console.log('▶️ Pause menu hidden');
+    }
+    
+    resumeGame() {
+        this.hidePauseMenu();
+        this.hideQuitConfirmation();
+        
+        // Resume the Phaser game scene
+        if (this.game) {
+            const gameScene = this.game.scene.getScene('GameScene');
+            if (gameScene) {
+                gameScene.resumeGame();
+            }
+        }
+        
+        console.log('▶️ Game resumed');
+    }
+    
+    showQuitConfirmation() {
+        document.getElementById('quit-confirmation').style.display = 'flex';
+        console.log('⚠️ Quit confirmation shown');
+    }
+    
+    hideQuitConfirmation() {
+        document.getElementById('quit-confirmation').style.display = 'none';
+        console.log('❌ Quit confirmation hidden');
+    }
+    
+    confirmQuitGame() {
+        console.log('🚪 Quitting game to main menu');
+        this.hideQuitConfirmation();
+        this.hidePauseMenu();
+        this.returnToMainMenu();
     }
 
     // Game UI update methods
@@ -610,13 +667,12 @@ class SpaceInvadersApp {
     }
     
     toggleMobileMenu() {
-        const gameMenu = document.getElementById('game-menu');
-        const isVisible = gameMenu.style.display === 'flex';
-        
-        if (isVisible) {
-            this.hideAllMenus();
-        } else {
-            gameMenu.style.display = 'flex';
+        // For mobile users, show the pause menu when they tap the hamburger menu
+        if (this.game) {
+            const gameScene = this.game.scene.getScene('GameScene');
+            if (gameScene && !gameScene.gameState.isGameOver) {
+                gameScene.pauseGame();
+            }
         }
     }
 }

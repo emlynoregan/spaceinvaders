@@ -216,6 +216,29 @@
         </div>
     </div>
 
+    <!-- Pause Menu Overlay -->
+    <div id="pause-menu" class="pause-menu" style="display: none;">
+        <div class="pause-menu-content">
+            <h2>⏸️ PAUSED</h2>
+            <div class="pause-buttons">
+                <button id="btn-resume" class="menu-btn primary">RESUME</button>
+                <button id="btn-quit-game" class="menu-btn">QUIT TO MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quit Confirmation Overlay -->
+    <div id="quit-confirmation" class="quit-confirmation" style="display: none;">
+        <div class="quit-confirmation-content">
+            <h3>⚠️ QUIT GAME?</h3>
+            <p>Your progress will be lost!</p>
+            <div class="quit-buttons">
+                <button id="btn-confirm-quit" class="menu-btn">YES, QUIT</button>
+                <button id="btn-cancel-quit" class="menu-btn primary">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
     <script type="module" src="js/main.js"></script>
