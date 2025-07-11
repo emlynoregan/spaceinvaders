@@ -14,11 +14,64 @@
     <meta name="format-detection" content="telephone=no">
     
     <title>🚀 Space Invaders - Defend Earth!</title>
-    <meta name="description" content="Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter!">
+    <meta name="description" content="Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter! Mobile-optimized with touch controls and fullscreen support.">
     
-    <!-- Icons and PWA -->
-    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
-    <link rel="apple-touch-icon" href="assets/images/icon-192x192.png">
+    <!-- Favicon Configuration -->
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/favicon.png">
+    <link rel="shortcut icon" href="assets/images/favicon.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:title" content="🚀 Space Invaders - Defend Earth!">
+    <meta property="og:description" content="Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter! Mobile-optimized with touch controls and fullscreen support.">
+    <meta property="og:image" content="assets/images/oembed.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Space Invaders">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="">
+    <meta property="twitter:title" content="🚀 Space Invaders - Defend Earth!">
+    <meta property="twitter:description" content="Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter! Mobile-optimized with touch controls and fullscreen support.">
+    <meta property="twitter:image" content="assets/images/oembed.png">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="author" content="Emlyn O'Regan">
+    <meta name="keywords" content="space invaders, retro games, arcade, shooter, mobile game, browser game, HTML5, JavaScript">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Space Invaders - Defend Earth!",
+        "description": "Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter! Mobile-optimized with touch controls and fullscreen support.",
+        "author": {
+            "@type": "Person",
+            "name": "Emlyn O'Regan",
+            "url": "https://emlynoregan.com"
+        },
+        "genre": ["Arcade", "Shooter", "Retro"],
+        "gamePlatform": ["Web Browser", "Mobile"],
+        "applicationCategory": "Game",
+        "operatingSystem": "Any",
+        "url": "",
+        "image": "assets/images/oembed.png",
+        "publisher": {
+            "@type": "Person",
+            "name": "Emlyn O'Regan"
+        }
+    }
+    </script>
     
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
@@ -114,6 +167,14 @@
     <div id="game-menu" class="game-menu" style="display: none;">
         <div class="menu-content">
             <h2>🚀 SPACE INVADERS</h2>
+            
+            <!-- Credits Information -->
+            <div class="credits-section">
+                <p class="credits-text">Vibe coded by <strong>Emlyn O'Regan</strong></p>
+                <p class="credits-tech">Using Cursor & Claude-4-Sonnet</p>
+                <a href="https://emlynoregan.com" target="_blank" class="credits-link">emlynoregan.com</a>
+            </div>
+            
             <div class="menu-buttons">
                 <button id="btn-play" class="menu-btn primary">PLAY</button>
                 <button id="btn-settings" class="menu-btn">SETTINGS</button>
@@ -298,8 +359,10 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {
-                    // Service worker registration failed, but game still works
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
                 });
             });
         }

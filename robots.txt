@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: /sitemap.xml
+
+# Game assets
+Allow: /assets/
+Allow: /js/
+Allow: /css/
+
+# Block unnecessary files
+Disallow: /test-mobile.html
+Disallow: /*.json$ 

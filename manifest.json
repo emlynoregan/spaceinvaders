@@ -1,0 +1,50 @@
+{
+    "name": "Space Invaders - Defend Earth!",
+    "short_name": "Space Invaders",
+    "description": "Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter! Mobile-optimized with touch controls and fullscreen support.",
+    "start_url": "./",
+    "display": "fullscreen",
+    "background_color": "#000000",
+    "theme_color": "#00ff00",
+    "orientation": "any",
+    "scope": "./",
+    "lang": "en-US",
+    "categories": ["games", "arcade", "entertainment"],
+    "icons": [
+        {
+            "src": "assets/images/favicon.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "assets/images/favicon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "assets/images/oembed.png",
+            "sizes": "1200x630",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Space Invaders gameplay"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Play Game",
+            "short_name": "Play",
+            "description": "Start playing Space Invaders",
+            "url": "./",
+            "icons": [
+                {
+                    "src": "assets/images/favicon.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ]
+} 

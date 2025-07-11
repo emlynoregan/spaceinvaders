@@ -231,8 +231,58 @@ canvas {
     font-size: clamp(2rem, 6vw, 3rem);
     color: #00ff00;
     text-shadow: 0 0 20px #00ff00;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     letter-spacing: 0.1em;
+}
+
+/* Credits Section */
+.credits-section {
+    margin: 0 auto 2.5rem;
+    padding: 1rem;
+    border: 1px solid rgba(0, 255, 0, 0.3);
+    border-radius: 8px;
+    background: rgba(0, 40, 0, 0.2);
+    max-width: 300px;
+}
+
+.credits-text {
+    color: #00cc00;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.credits-text strong {
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
+}
+
+.credits-tech {
+    color: #008800;
+    font-size: 0.8rem;
+    margin-bottom: 0.8rem;
+    text-align: center;
+    font-style: italic;
+}
+
+.credits-link {
+    display: inline-block;
+    color: #00ff00;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #00ff00;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    background: rgba(0, 255, 0, 0.05);
+    font-weight: bold;
+}
+
+.credits-link:hover {
+    background: rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+    text-shadow: 0 0 5px #00ff00;
+    transform: translateY(-1px);
 }
 
 .menu-buttons {
