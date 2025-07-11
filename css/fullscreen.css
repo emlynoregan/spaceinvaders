@@ -139,27 +139,32 @@ body {
     }
 }
 
-/* Chrome mobile address bar hiding */
+/* Chrome mobile address bar hiding - SIMPLE SCROLL METHOD */
 @media screen and (orientation: landscape) {
-    /* Force the viewport to be exactly the screen size */
+    /* Make the page taller than viewport to force scrolling */
+    body {
+        height: 120vh !important;
+        min-height: 120vh !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    
+    /* Position game container to fill visible area after scroll */
     .game-container {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        height: 100dvh;
         z-index: 1;
     }
     
-    /* Ensure no content causes scrolling */
-    body, html {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        height: 100%;
-        width: 100%;
-        position: fixed;
+    /* Add invisible spacer at bottom to enable scrolling */
+    body::after {
+        content: '';
+        display: block;
+        height: 20vh;
+        width: 1px;
     }
 }
 

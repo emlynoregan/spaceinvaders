@@ -253,34 +253,44 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
     <script type="module" src="js/main.js"></script>
     
-    <!-- Address bar hiding script -->
+    <!-- Simple address bar hiding script -->
     <script>
-        // Immediate address bar hiding for mobile
+        // Simple scroll-based address bar hiding for mobile
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            function hideAddressBar() {
-                if (window.scrollY === 0) {
-                    window.scrollTo(0, 1);
-                    setTimeout(() => window.scrollTo(0, 0), 10);
+            function hideAddressBarSimple() {
+                // In landscape mode, scroll down to hide address bar
+                if (window.innerWidth > window.innerHeight) {
+                    const scrollAmount = Math.max(80, window.innerHeight * 0.12);
+                    window.scrollTo(0, scrollAmount);
+                    
+                    // Lock scroll position
+                    let isScrollLocked = false;
+                    window.addEventListener('scroll', () => {
+                        if (!isScrollLocked && window.scrollY < scrollAmount * 0.7) {
+                            isScrollLocked = true;
+                            window.scrollTo(0, scrollAmount);
+                            setTimeout(() => { isScrollLocked = false; }, 100);
+                        }
+                    });
                 }
-                
-                // Set viewport height
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty('--vh', vh + 'px');
             }
             
-            // Hide immediately
-            hideAddressBar();
-            
-            // Hide on load
-            window.addEventListener('load', hideAddressBar);
-            
-            // Hide on orientation change
+            // Hide on orientation change to landscape
             window.addEventListener('orientationchange', () => {
-                setTimeout(hideAddressBar, 500);
+                setTimeout(() => {
+                    hideAddressBarSimple();
+                }, 600);
             });
             
-            // Hide on first touch
-            document.addEventListener('touchstart', hideAddressBar, { once: true, passive: true });
+            // Hide on page load if already landscape
+            window.addEventListener('load', () => {
+                setTimeout(hideAddressBarSimple, 100);
+            });
+            
+            // Hide on first touch in landscape
+            document.addEventListener('touchstart', () => {
+                setTimeout(hideAddressBarSimple, 50);
+            }, { once: true, passive: true });
         }
     </script>
 

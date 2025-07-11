@@ -1,6 +1,7 @@
 // Space Invaders - Main Application
 import { getAdaptiveConfig, deviceUtils } from './config.js';
 import { FullscreenHelper } from './mobile/FullscreenHelper.js';
+import { SimpleFullscreen } from './mobile/SimpleFullscreen.js';
 
 class SpaceInvadersApp {
     constructor() {
@@ -10,9 +11,11 @@ class SpaceInvadersApp {
         this.currentSettings = this.loadSettings();
         this.isGameLoaded = false;
         
-        // Initialize fullscreen helper for mobile
+        // Initialize fullscreen helpers for mobile
         if (this.isMobile) {
             this.fullscreenHelper = new FullscreenHelper();
+            this.simpleFullscreen = new SimpleFullscreen();
+            this.simpleFullscreen.init();
             
             // Listen for orientation changes to toggle fullscreen
             window.addEventListener('orientationchange', () => {

@@ -57,19 +57,19 @@ export class FullscreenHelper {
             return;
         }
         
-        // Method 1: Scroll to hide address bar
-        if (window.scrollY === 0) {
-            window.scrollTo(0, 1);
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 10);
+        // SIMPLE METHOD: Just scroll down enough to hide address bar
+        if (this.isLandscape()) {
+            // Scroll down to hide address bar, then stay there
+            const scrollAmount = Math.max(100, window.innerHeight * 0.1); // 10% of screen height
+            window.scrollTo(0, scrollAmount);
+            
+            // Prevent scrolling back up
+            window.addEventListener('scroll', () => {
+                if (window.scrollY < scrollAmount * 0.5) {
+                    window.scrollTo(0, scrollAmount);
+                }
+            });
         }
-        
-        // Method 2: Force viewport height
-        this.setViewportHeight();
-        
-        // Method 3: Request fullscreen if available
-        this.requestFullscreen();
         
         this.hideAddressBarAttempts++;
         
