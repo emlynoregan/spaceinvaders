@@ -224,36 +224,14 @@ export class GameScene extends Phaser.Scene {
     }
     
     createBarrierSprite() {
+        // Create a simple 5x5 barrier pixel sprite
         const graphics = this.add.graphics();
         graphics.fillStyle(0x00ff00);
-        
-        // Create a pixelated barrier pattern
-        const pixels = [
-            [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
-            [0,0,1,1,1,1,1,1,1,1,1,1,0,0],
-            [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,1,1,1,0,0,0,0,0,0,1,1,1,1],
-            [1,1,1,0,0,0,0,0,0,0,0,1,1,1],
-            [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
-            [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
-            [1,1,0,0,0,0,0,0,0,0,0,0,1,1]
-        ];
-        
-        const pixelSize = 5;
-        pixels.forEach((row, y) => {
-            row.forEach((pixel, x) => {
-                if (pixel) {
-                    graphics.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-                }
-            });
-        });
-        
-        graphics.generateTexture('barrier', 70, 60);
+        graphics.fillRect(0, 0, 5, 5); // 5x5 pixel - simple and effective
+        graphics.generateTexture('barrier_pixel', 5, 5);
         graphics.destroy();
+        
+        console.log('🧱 Simple 5x5 barrier pixel texture created');
     }
     
     create() {
@@ -347,23 +325,58 @@ export class GameScene extends Phaser.Scene {
     }
     
     createBarriers() {
-        this.barriers = this.physics.add.group();
+        this.barriers = this.physics.add.group(); // Keep as physics group for collision detection
+        this.barrierPixels = []; // Store all barrier pixels for easy access
+        
+        // Classic Space Invaders barrier pattern
+        const barrierPattern = [
+            [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+            [0,0,1,1,1,1,1,1,1,1,1,1,0,0],
+            [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,0,0,0,0,0,0,1,1,1,1],
+            [1,1,1,0,0,0,0,0,0,0,0,1,1,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,1,1]
+        ];
         
         const barrierConfig = this.config.gameplay.barriers;
-        const startX = (this.config.width - (barrierConfig.count * barrierConfig.width + 
-                       (barrierConfig.count - 1) * barrierConfig.spacing)) / 2;
+        const pixelSize = 5; // Simple 5x5 pixels
+        const patternWidth = barrierPattern[0].length * pixelSize;
         
-        for (let i = 0; i < barrierConfig.count; i++) {
-            const x = startX + i * (barrierConfig.width + barrierConfig.spacing) + barrierConfig.width / 2;
-            const barrier = this.physics.add.sprite(x, barrierConfig.offsetY, 'barrier');
-            barrier.setData('health', 5); // 5 hits to destroy
-            barrier.body.setSize(70, 60); // Set collision box size
-            barrier.body.setImmovable(true);
-            barrier.body.moves = false; // Make sure barriers don't move
-            this.barriers.add(barrier);
+        // Calculate starting position for barriers
+        const totalWidth = barrierConfig.count * patternWidth + (barrierConfig.count - 1) * barrierConfig.spacing;
+        const startX = (this.config.width - totalWidth) / 2;
+        
+        for (let barrierIndex = 0; barrierIndex < barrierConfig.count; barrierIndex++) {
+            const barrierX = startX + barrierIndex * (patternWidth + barrierConfig.spacing);
+            const barrierPixelGroup = [];
+            
+            // Create each pixel of the barrier - SIMPLE approach
+            barrierPattern.forEach((row, y) => {
+                row.forEach((pixel, x) => {
+                    if (pixel === 1) {
+                        const pixelX = barrierX + x * pixelSize;
+                        const pixelY = barrierConfig.offsetY + y * pixelSize;
+                        
+                        // Just create a simple physics sprite - let Phaser handle everything else
+                        const barrierPixel = this.physics.add.sprite(pixelX, pixelY, 'barrier_pixel');
+                        barrierPixel.body.setImmovable(true);
+                        
+                        this.barriers.add(barrierPixel);
+                        barrierPixelGroup.push(barrierPixel);
+                    }
+                });
+            });
+            
+            this.barrierPixels[barrierIndex] = barrierPixelGroup;
         }
         
-        console.log(`🛡️ Created ${this.barriers.children.size} barriers`);
+        console.log(`🛡️ Created ${this.barriers.children.size} barrier pixels across ${barrierConfig.count} barriers (SIMPLE METHOD)`);
     }
     
     createBulletGroups() {
@@ -426,7 +439,7 @@ export class GameScene extends Phaser.Scene {
         // Alien bullets vs barriers
         this.physics.add.overlap(this.alienBullets, this.barriers, this.bulletHitBarrier, null, this);
         
-        console.log('🛡️ Barrier collision detection established');
+        console.log(`🛡️ Barrier collision detection established for ${this.barriers.children.size} barrier pixels`);
     }
     
     update(time, delta) {
@@ -625,7 +638,7 @@ export class GameScene extends Phaser.Scene {
         bullet.y = this.player.y - 10;
         bullet.setVelocityY(-400);
         
-        console.log(`🔫 Player bullet fired at (${bullet.x}, ${bullet.y})`); // Debug
+        // console.log(`🔫 Player bullet fired`); // Commented out to reduce spam
         
         // Play shoot sound
         this.playSound('player_shoot', 0.1);
@@ -672,32 +685,20 @@ export class GameScene extends Phaser.Scene {
         console.log(`💥 Alien destroyed! +${points} points, new score: ${this.gameState.score}`);
     }
     
-    bulletHitBarrier(bullet, barrier) {
-        console.log('🛡️ Bullet hit barrier!'); // Debug log
+    bulletHitBarrier(bullet, barrierPixel) {
+        console.log(`🛡️ Bullet hit barrier pixel - destroying it directly!`);
         
+        // Destroy the bullet
         bullet.setActive(false).setVisible(false);
         bullet.body.enable = false;
+        
+        // Destroy the barrier pixel that was hit
+        barrierPixel.destroy();
         
         // Play barrier hit sound
         this.playSound('barrier_hit');
         
-        // Damage barrier
-        let health = barrier.getData('health');
-        health--;
-        barrier.setData('health', health);
-        
-        if (health <= 0) {
-            barrier.destroy();
-            this.playSound('barrier_destroy');
-            console.log('🛡️ Barrier destroyed!');
-        } else {
-            // Visual damage effect - make it more reddish
-            const damage = 5 - health;
-            const tint = Phaser.Display.Color.GetColor(255, 255 - damage * 40, 255 - damage * 40);
-            barrier.setTint(tint);
-        }
-        
-        console.log(`🛡️ Barrier health: ${health}`);
+        console.log(`🛡️ Barrier pixel destroyed - simple and effective!`);
     }
     
     alienBulletHitPlayer(bullet, player) {
@@ -885,8 +886,9 @@ export class GameScene extends Phaser.Scene {
             this.gameState.alienFiringChance * this.config.difficulty.fireRateIncreasePerWave
         );
         
-        // Regenerate barriers for new wave
+        // Regenerate barriers for new wave (pixel-by-pixel destructible)
         this.barriers.clear(true, true);
+        this.barrierPixels = []; // Reset barrier pixel tracking
         this.createBarriers();
         
         // CRITICAL: Re-establish collision detection for new barriers
