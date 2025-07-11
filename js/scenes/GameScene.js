@@ -37,45 +37,127 @@ export class GameScene extends Phaser.Scene {
     }
     
     createPlaceholderAssets() {
-        // Player ship (green rectangle)
-        this.add.graphics()
-            .fillStyle(0x00ff00)
-            .fillRect(0, 0, 32, 16)
-            .generateTexture('player', 32, 16);
+        // Player ship (triangular spaceship)
+        const playerGraphics = this.add.graphics();
+        playerGraphics.fillStyle(0x00ff00);
+        // Draw a triangular spaceship
+        playerGraphics.fillTriangle(16, 0, 0, 16, 32, 16);
+        playerGraphics.fillRect(12, 10, 8, 6); // body
+        playerGraphics.generateTexture('player', 32, 16);
+        playerGraphics.destroy();
         
-        // Player bullet (white line)
-        this.add.graphics()
-            .fillStyle(0xffffff)
-            .fillRect(0, 0, 2, 8)
-            .generateTexture('player_bullet', 2, 8);
+        // Player bullet (bright white projectile)
+        const bulletGraphics = this.add.graphics();
+        bulletGraphics.fillStyle(0xffffff);
+        bulletGraphics.fillRect(0, 0, 3, 8);
+        bulletGraphics.generateTexture('player_bullet', 3, 8);
+        bulletGraphics.destroy();
         
-        // Alien sprites (different colors)
-        this.add.graphics()
-            .fillStyle(0xff0000)
-            .fillRect(0, 0, 24, 16)
-            .generateTexture('alien_red', 24, 16);
+        // Red alien (top row - octopus-like)
+        this.createAlienSprite('alien_red', 0xff0000, 'octopus');
         
-        this.add.graphics()
-            .fillStyle(0xffff00)
-            .fillRect(0, 0, 24, 16)
-            .generateTexture('alien_yellow', 24, 16);
+        // Yellow alien (middle rows - crab-like)
+        this.createAlienSprite('alien_yellow', 0xffff00, 'crab');
         
-        this.add.graphics()
-            .fillStyle(0x00ff00)
-            .fillRect(0, 0, 24, 16)
-            .generateTexture('alien_green', 24, 16);
+        // Green alien (bottom rows - squid-like)
+        this.createAlienSprite('alien_green', 0x00ff00, 'squid');
         
-        // Alien bullet (red line)
-        this.add.graphics()
-            .fillStyle(0xff0000)
-            .fillRect(0, 0, 2, 8)
-            .generateTexture('alien_bullet', 2, 8);
+        // Alien bullet (red projectile)
+        const alienBulletGraphics = this.add.graphics();
+        alienBulletGraphics.fillStyle(0xff0000);
+        alienBulletGraphics.fillRect(0, 0, 3, 8);
+        alienBulletGraphics.generateTexture('alien_bullet', 3, 8);
+        alienBulletGraphics.destroy();
         
-        // Barrier (brown rectangle)
-        this.add.graphics()
-            .fillStyle(0x8b4513)
-            .fillRect(0, 0, 80, 60)
-            .generateTexture('barrier', 80, 60);
+        // Barrier (pixelated defensive wall)
+        this.createBarrierSprite();
+    }
+    
+    createAlienSprite(textureName, color, type) {
+        const graphics = this.add.graphics();
+        graphics.fillStyle(color);
+        
+        switch (type) {
+            case 'octopus':
+                // Octopus alien (top row)
+                graphics.fillRect(8, 4, 8, 2);    // top
+                graphics.fillRect(4, 6, 16, 4);   // head
+                graphics.fillRect(6, 10, 12, 2);  // body
+                graphics.fillRect(2, 12, 4, 2);   // left tentacle
+                graphics.fillRect(6, 12, 4, 2);   // left-mid tentacle
+                graphics.fillRect(14, 12, 4, 2);  // right-mid tentacle
+                graphics.fillRect(18, 12, 4, 2);  // right tentacle
+                // Eyes
+                graphics.fillStyle(0x000000);
+                graphics.fillRect(7, 7, 2, 2);
+                graphics.fillRect(15, 7, 2, 2);
+                break;
+                
+            case 'crab':
+                // Crab alien (middle rows)
+                graphics.fillRect(6, 2, 12, 2);   // top shell
+                graphics.fillRect(4, 4, 16, 6);   // main body
+                graphics.fillRect(2, 10, 4, 2);   // left claw
+                graphics.fillRect(8, 10, 2, 2);   // left leg
+                graphics.fillRect(14, 10, 2, 2);  // right leg
+                graphics.fillRect(18, 10, 4, 2);  // right claw
+                // Eyes
+                graphics.fillStyle(0x000000);
+                graphics.fillRect(8, 6, 2, 2);
+                graphics.fillRect(14, 6, 2, 2);
+                break;
+                
+            case 'squid':
+                // Squid alien (bottom rows)
+                graphics.fillRect(6, 2, 12, 6);   // head
+                graphics.fillRect(8, 8, 8, 2);    // body
+                graphics.fillRect(4, 10, 2, 2);   // left tentacle
+                graphics.fillRect(8, 10, 2, 2);   // left-mid tentacle
+                graphics.fillRect(14, 10, 2, 2);  // right-mid tentacle
+                graphics.fillRect(18, 10, 2, 2);  // right tentacle
+                graphics.fillRect(10, 12, 4, 2);  // bottom tentacle
+                // Eyes
+                graphics.fillStyle(0x000000);
+                graphics.fillRect(9, 4, 2, 2);
+                graphics.fillRect(13, 4, 2, 2);
+                break;
+        }
+        
+        graphics.generateTexture(textureName, 24, 16);
+        graphics.destroy();
+    }
+    
+    createBarrierSprite() {
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0x00ff00);
+        
+        // Create a pixelated barrier pattern
+        const pixels = [
+            [0,0,0,1,1,1,1,1,1,1,1,0,0,0],
+            [0,0,1,1,1,1,1,1,1,1,1,1,0,0],
+            [0,1,1,1,1,1,1,1,1,1,1,1,1,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,1,1,1,0,0,0,0,0,0,1,1,1,1],
+            [1,1,1,0,0,0,0,0,0,0,0,1,1,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,1,1],
+            [1,1,0,0,0,0,0,0,0,0,0,0,1,1]
+        ];
+        
+        const pixelSize = 5;
+        pixels.forEach((row, y) => {
+            row.forEach((pixel, x) => {
+                if (pixel) {
+                    graphics.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+                }
+            });
+        });
+        
+        graphics.generateTexture('barrier', 70, 60);
+        graphics.destroy();
     }
     
     create() {
