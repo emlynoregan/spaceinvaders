@@ -77,14 +77,17 @@
 /* Left side: Movement controls */
 .movement-controls {
     display: flex;
+    flex-direction: row;
     gap: 15px;
     align-items: center;
+    justify-content: flex-start;
 }
 
 /* Right side: Fire control */
 .fire-controls {
     display: flex;
     align-items: center;
+    gap: 15px;
 }
 
 .btn-fire {
@@ -101,6 +104,22 @@
 .btn-fire.pressed {
     background: rgba(255, 0, 0, 0.3);
     box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+}
+
+.btn-exit {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 0, 0.1);
+    border-color: rgba(255, 255, 0, 0.8);
+    color: #ffff44;
+}
+
+.btn-exit:active,
+.btn-exit.pressed {
+    background: rgba(255, 255, 0, 0.3);
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.6);
 }
 
 

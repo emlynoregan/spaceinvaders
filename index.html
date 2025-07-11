@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-touch-fullscreen" content="yes">
     <meta name="theme-color" content="#000000">
+    
+    <!-- Fullscreen web app meta tags -->
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="format-detection" content="telephone=no">
     
     <title>🚀 Space Invaders - Defend Earth!</title>
     <meta name="description" content="Classic Space Invaders game - Fight off waves of alien invaders in this retro-style shooter!">
@@ -18,6 +23,7 @@
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/fullscreen.css">
     
     <!-- Preload key resources -->
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js" as="script">
@@ -58,6 +64,9 @@
             <div class="fire-controls">
                 <button id="btn-fire" class="control-btn btn-fire" data-action="fire">
                     <span>🔥</span>
+                </button>
+                <button id="btn-exit" class="control-btn btn-exit" data-action="exit">
+                    <span>✕</span>
                 </button>
             </div>
         </div>
@@ -173,8 +182,8 @@
                 <h4>Mobile Controls:</h4>
                 <ul>
                     <li><strong>Left thumb:</strong> ◀ ▶ buttons to move</li>
-                    <li><strong>Right thumb:</strong> 🔥 button to fire</li>
-                    <li><strong>Menu:</strong> ☰ button to pause</li>
+                    <li><strong>Right thumb:</strong> 🔥 button to fire, ✕ to pause</li>
+                    <li><strong>Landscape mode:</strong> Turn phone sideways for fullscreen</li>
                 </ul>
             </div>
             

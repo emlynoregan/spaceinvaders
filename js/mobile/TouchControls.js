@@ -45,6 +45,12 @@ export class TouchControls {
         if (this.buttons.fire) {
             this.bindButtonEvents(this.buttons.fire, 'fire');
         }
+        
+        // Bind exit button
+        const exitButton = document.getElementById('btn-exit');
+        if (exitButton) {
+            this.bindButtonEvents(exitButton, 'exit');
+        }
     }
     
     bindButtonEvents(button, action) {
@@ -108,6 +114,14 @@ export class TouchControls {
                     // Fire when button is pressed (not when released)
                     this.gameScene?.firePlayerBullet?.();
                     this.triggerHapticFeedback('medium');
+                }
+                break;
+                
+            case 'exit':
+                if (pressed) {
+                    // Exit the game
+                    this.gameScene?.pauseGame?.();
+                    this.triggerHapticFeedback('light');
                 }
                 break;
         }
