@@ -10,13 +10,19 @@ export class GameScene extends Phaser.Scene {
         this.config = this.registry.get('config');
         this.settings = this.registry.get('settings');
         
+        // Debug config loading
+        console.log('🎮 GameScene init - Config loaded:', !!this.config);
+        console.log('🎮 Alien points config:', this.config?.scoring?.alienPoints);
+        
         // Initialize game state
         this.gameState = {
             score: 0,
             lives: this.config.scoring.startingLives,
             wave: 1,
             isGameOver: false,
-            isPaused: false
+            isPaused: false,
+            nextExtraLifeScore: this.config.scoring.extraLifeScore, // Track next extra life threshold
+            alienFiringChance: this.config.difficulty.baseFiringChance // Dynamic firing frequency
         };
         
         // Player state
@@ -28,7 +34,80 @@ export class GameScene extends Phaser.Scene {
             isMovingRight: false
         };
         
+        // Initialize sound system
+        this.initSoundSystem();
+        
         console.log('🎮 GameScene initialized');
+    }
+    
+    initSoundSystem() {
+        // Create AudioContext for Web Audio API
+        this.audioContext = null;
+        this.sounds = {};
+        
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.createSounds();
+            console.log('🎵 Audio system initialized');
+        } catch (error) {
+            console.warn('Web Audio API not supported:', error);
+        }
+    }
+    
+    createSounds() {
+        // Create simple sound effects using oscillators
+        this.soundFrequencies = {
+            player_shoot: [800, 600],
+            alien_death: [200, 150],
+            player_death: [100], // Single tone to prevent infinite looping
+            barrier_hit: [300],
+            barrier_destroy: [150, 100],
+            alien_move: [150],
+            ufo: [400, 450, 400, 450]
+        };
+    }
+    
+    playSound(soundName, duration = 0.1) {
+        if (!this.audioContext || 
+            this.audioContext.state === 'suspended' || 
+            !this.settings?.sfxVolume || 
+            this.settings.sfxVolume === 0 ||
+            this.gameState.isGameOver) {
+            return;
+        }
+        
+        const frequencies = this.soundFrequencies[soundName];
+        if (!frequencies) return;
+        
+        const volume = (this.settings.sfxVolume / 100) * 0.3; // Max 30% volume
+        
+        frequencies.forEach((freq, index) => {
+            setTimeout(() => {
+                if (!this.gameState.isGameOver) { // Double check game isn't over
+                    this.createBeep(freq, duration, volume);
+                }
+            }, index * duration * 1000);
+        });
+    }
+    
+    createBeep(frequency, duration, volume) {
+        if (!this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+        oscillator.type = 'square'; // Retro sound
+        
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+        
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
     }
     
     preload() {
@@ -37,12 +116,28 @@ export class GameScene extends Phaser.Scene {
     }
     
     createPlaceholderAssets() {
-        // Player ship (triangular spaceship)
+        // Player ship (detailed spaceship)
         const playerGraphics = this.add.graphics();
+        
+        // Main ship body (green)
         playerGraphics.fillStyle(0x00ff00);
-        // Draw a triangular spaceship
-        playerGraphics.fillTriangle(16, 0, 0, 16, 32, 16);
-        playerGraphics.fillRect(12, 10, 8, 6); // body
+        playerGraphics.fillTriangle(16, 0, 4, 12, 28, 12); // main hull
+        playerGraphics.fillRect(14, 8, 4, 8); // center body
+        
+        // Engine details (darker green)
+        playerGraphics.fillStyle(0x008800);
+        playerGraphics.fillRect(6, 12, 4, 4); // left engine
+        playerGraphics.fillRect(22, 12, 4, 4); // right engine
+        
+        // Cockpit (bright green)
+        playerGraphics.fillStyle(0x88ff88);
+        playerGraphics.fillRect(15, 4, 2, 4); // cockpit window
+        
+        // Wing details (white)
+        playerGraphics.fillStyle(0xffffff);
+        playerGraphics.fillRect(2, 10, 4, 2); // left wing tip
+        playerGraphics.fillRect(26, 10, 4, 2); // right wing tip
+        
         playerGraphics.generateTexture('player', 32, 16);
         playerGraphics.destroy();
         
@@ -166,9 +261,9 @@ export class GameScene extends Phaser.Scene {
         
         // Create game objects
         this.createPlayer();
+        this.createBulletGroups(); // Create bullets before setting up physics
         this.createAliens();
         this.createBarriers();
-        this.createBulletGroups();
         
         // Setup input
         this.setupInput();
@@ -178,13 +273,14 @@ export class GameScene extends Phaser.Scene {
             this.setupTouchControls();
         }
         
-        // Setup physics
+        // Setup physics (after all objects are created)
         this.setupPhysics();
         
         // Update UI
         this.updateUI();
         
         console.log('✅ GameScene created successfully');
+        console.log('🛡️ Barriers created:', this.barriers.children.size);
     }
     
     createStarfield() {
@@ -226,23 +322,31 @@ export class GameScene extends Phaser.Scene {
                 const alienType = alienTypes[row] || 'alien_green';
                 
                 const alien = this.physics.add.sprite(x, y, alienType);
-                alien.setData('points', this.getAlienPoints(alienType));
+                const points = this.getAlienPoints(alienType);
+                alien.setData('points', points);
                 alien.setData('row', row);
                 alien.setData('col', col);
+                
+                // Debug logging for first few aliens
+                if (row === 0 && col < 3) {
+                    console.log(`👾 Created ${alienType} alien at (${x},${y}) with ${points} points`);
+                }
                 
                 this.aliens.add(alien);
             }
         }
         
+        console.log(`👾 Created ${this.aliens.children.size} aliens total`);
+        
         // Setup alien movement
         this.alienDirection = 1; // 1 for right, -1 for left
         this.alienSpeed = this.config.gameplay.alienSpeed;
         this.lastAlienMove = 0;
-        this.alienMoveDelay = 1000; // Start slow
+        this.alienMoveDelay = 800; // Start at a reasonable pace (was 1000ms)
     }
     
     createBarriers() {
-        this.barriers = this.physics.add.staticGroup();
+        this.barriers = this.physics.add.group();
         
         const barrierConfig = this.config.gameplay.barriers;
         const startX = (this.config.width - (barrierConfig.count * barrierConfig.width + 
@@ -252,20 +356,29 @@ export class GameScene extends Phaser.Scene {
             const x = startX + i * (barrierConfig.width + barrierConfig.spacing) + barrierConfig.width / 2;
             const barrier = this.physics.add.sprite(x, barrierConfig.offsetY, 'barrier');
             barrier.setData('health', 5); // 5 hits to destroy
+            barrier.body.setSize(70, 60); // Set collision box size
+            barrier.body.setImmovable(true);
+            barrier.body.moves = false; // Make sure barriers don't move
             this.barriers.add(barrier);
         }
+        
+        console.log(`🛡️ Created ${this.barriers.children.size} barriers`);
     }
     
     createBulletGroups() {
         this.playerBullets = this.physics.add.group({
             defaultKey: 'player_bullet',
-            maxSize: this.config.performance.maxBullets
+            maxSize: this.config.performance.maxBullets,
+            runChildUpdate: true
         });
         
         this.alienBullets = this.physics.add.group({
             defaultKey: 'alien_bullet',
-            maxSize: this.config.performance.maxBullets
+            maxSize: this.config.performance.maxBullets,
+            runChildUpdate: true
         });
+        
+        console.log('🔫 Bullet groups created');
     }
     
     setupInput() {
@@ -283,20 +396,36 @@ export class GameScene extends Phaser.Scene {
     }
     
     setupPhysics() {
-        // Player bullets vs aliens
-        this.physics.add.overlap(this.playerBullets, this.aliens, this.playerBulletHitAlien, null, this);
+        // Set up alien collisions (separate method so it can be re-called for new waves)
+        this.setupAlienCollisions();
         
-        // Player bullets vs barriers
-        this.physics.add.overlap(this.playerBullets, this.barriers, this.bulletHitBarrier, null, this);
+        // Set up barrier collisions (separate method so it can be re-called for new waves)
+        this.setupBarrierCollisions();
         
         // Alien bullets vs player
         this.physics.add.overlap(this.alienBullets, this.player, this.alienBulletHitPlayer, null, this);
         
-        // Alien bullets vs barriers
-        this.physics.add.overlap(this.alienBullets, this.barriers, this.bulletHitBarrier, null, this);
+        console.log('🔧 Physics setup complete');
+    }
+    
+    setupAlienCollisions() {
+        // Player bullets vs aliens
+        this.physics.add.overlap(this.playerBullets, this.aliens, this.playerBulletHitAlien, null, this);
         
         // Aliens vs player (collision)
         this.physics.add.overlap(this.aliens, this.player, this.alienHitPlayer, null, this);
+        
+        console.log('👾 Alien collision detection established');
+    }
+    
+    setupBarrierCollisions() {
+        // Player bullets vs barriers
+        this.physics.add.overlap(this.playerBullets, this.barriers, this.bulletHitBarrier, null, this);
+        
+        // Alien bullets vs barriers
+        this.physics.add.overlap(this.alienBullets, this.barriers, this.bulletHitBarrier, null, this);
+        
+        console.log('🛡️ Barrier collision detection established');
     }
     
     update(time, delta) {
@@ -316,10 +445,15 @@ export class GameScene extends Phaser.Scene {
     handlePlayerInput() {
         const player = this.player;
         
-        // Reset velocity
+        // Don't handle input if player doesn't exist or game is over/paused
+        if (!player || this.gameState.isGameOver || this.gameState.isPaused) {
+            return;
+        }
+        
+        // Reset velocity (always do this to stop momentum)
         player.setVelocityX(0);
         
-        // Handle movement
+        // Handle movement (even if invisible during respawn - the physics should still work)
         if (this.cursors.left.isDown || this.keys.A.isDown || this.playerState.isMovingLeft) {
             player.setVelocityX(-this.playerState.speed);
         } else if (this.cursors.right.isDown || this.keys.D.isDown || this.playerState.isMovingRight) {
@@ -366,44 +500,71 @@ export class GameScene extends Phaser.Scene {
                 alien.y += this.config.gameplay.alienDropDistance;
             });
             
-            // Increase speed
-            this.alienMoveDelay = Math.max(200, this.alienMoveDelay * 0.95);
+            // Check if any alien reached the bottom (game over condition)
+            const lowestAlien = Math.max(...this.aliens.children.entries.map(alien => alien.y));
+            if (lowestAlien >= this.config.height - 100) { // Close to player level
+                console.log('👾 Aliens reached the bottom! Game Over!');
+                this.alienInvasionGameOver();
+                return;
+            }
+            
+            // Speed increase is now handled by wave progression, not movement cycles
+            
+            // Play alien drop sound
+            this.playSound('alien_move', 0.05);
         } else {
             // Move horizontally
             this.aliens.children.entries.forEach(alien => {
                 alien.x += moveDistance * this.alienDirection;
             });
+            
+            // Play alien movement sound
+            this.playSound('alien_move', 0.05);
         }
+    }
+    
+    alienInvasionGameOver() {
+        this.gameState.isGameOver = true;
+        
+        // Stop all audio
+        if (this.audioContext) {
+            this.audioContext.suspend();
+        }
+        
+        console.log('👾 INVASION COMPLETE! The aliens have reached Earth!');
+        
+        // Show special invasion game over message
+        this.app?.showGameOver?.(this.gameState.score, 'INVASION COMPLETE!');
+        
+        // Update high score
+        this.updateHighScore();
     }
     
     alienFire() {
         if (this.aliens.children.size === 0) return;
         
-        // Random chance to fire
-        if (Math.random() < 0.02) {
+        // Use dynamic firing chance that increases with each wave
+        if (Math.random() < this.gameState.alienFiringChance) {
             const randomAlien = Phaser.Utils.Array.GetRandom(this.aliens.children.entries);
             this.fireAlienBullet(randomAlien.x, randomAlien.y);
+            console.log(`👾 Alien fired! (${(this.gameState.alienFiringChance * 100).toFixed(1)}% chance)`); // Debug to track firing
         }
     }
     
     updateBullets() {
-        // Update player bullets
+        // Clean up off-screen player bullets
         this.playerBullets.children.entries.forEach(bullet => {
-            if (bullet.active) {
-                bullet.y -= 5;
-                if (bullet.y < 0) {
-                    bullet.setActive(false).setVisible(false);
-                }
+            if (bullet.active && bullet.y < 0) {
+                bullet.setActive(false).setVisible(false);
+                bullet.body.enable = false;
             }
         });
         
-        // Update alien bullets
+        // Clean up off-screen alien bullets
         this.alienBullets.children.entries.forEach(bullet => {
-            if (bullet.active) {
-                bullet.y += 3;
-                if (bullet.y > this.config.height) {
-                    bullet.setActive(false).setVisible(false);
-                }
+            if (bullet.active && bullet.y > this.config.height) {
+                bullet.setActive(false).setVisible(false);
+                bullet.body.enable = false;
             }
         });
     }
@@ -411,20 +572,30 @@ export class GameScene extends Phaser.Scene {
     firePlayerBullet() {
         if (!this.playerState.canFire) return;
         
-        const bullet = this.playerBullets.get(this.player.x, this.player.y - 20);
-        
-        if (bullet) {
-            bullet.setActive(true).setVisible(true);
-            bullet.body.enable = true;
-            
-            this.playerState.canFire = false;
-            this.time.delayedCall(this.playerState.fireDelay, () => {
-                this.playerState.canFire = true;
-            });
-            
-            // Play sound effect (placeholder)
-            console.log('🔫 Player fires!');
+        // Get or create bullet
+        let bullet = this.playerBullets.getFirstDead();
+        if (!bullet) {
+            bullet = this.physics.add.sprite(0, 0, 'player_bullet');
+            this.playerBullets.add(bullet);
         }
+        
+        // Position and activate bullet
+        bullet.setActive(true).setVisible(true);
+        bullet.body.enable = true;
+        bullet.x = this.player.x;
+        bullet.y = this.player.y - 10;
+        bullet.setVelocityY(-400);
+        
+        console.log(`🔫 Player bullet fired at (${bullet.x}, ${bullet.y})`); // Debug
+        
+        // Play shoot sound
+        this.playSound('player_shoot', 0.1);
+        
+        // Set fire cooldown
+        this.playerState.canFire = false;
+        this.time.delayedCall(this.playerState.fireDelay, () => {
+            this.playerState.canFire = true;
+        });
     }
     
     fireAlienBullet(x, y) {
@@ -432,24 +603,44 @@ export class GameScene extends Phaser.Scene {
         
         if (bullet) {
             bullet.setActive(true).setVisible(true);
-            bullet.body.enable = true;
+            if (bullet.body) {
+                bullet.body.enable = true;
+                bullet.setVelocityY(200); // Set initial velocity
+            }
         }
     }
     
     // Collision handlers
     playerBulletHitAlien(bullet, alien) {
-        bullet.setActive(false).setVisible(false);
-        alien.destroy();
+        console.log('🎯 Bullet hit alien detected!'); // Debug
         
-        // Add score
+        bullet.setActive(false).setVisible(false);
+        bullet.body.enable = false;
+        
+        // Play alien death sound
+        this.playSound('alien_death', 0.15);
+        
+        // Add score BEFORE destroying alien
         const points = alien.getData('points');
+        console.log(`💰 Alien points retrieved:`, points); // Debug
+        console.log(`💰 Alien type:`, alien.texture.key); // Debug
+        
         this.addScore(points);
         
-        console.log(`💥 Alien destroyed! +${points} points`);
+        // Destroy alien after scoring
+        alien.destroy();
+        
+        console.log(`💥 Alien destroyed! +${points} points, new score: ${this.gameState.score}`);
     }
     
     bulletHitBarrier(bullet, barrier) {
+        console.log('🛡️ Bullet hit barrier!'); // Debug log
+        
         bullet.setActive(false).setVisible(false);
+        bullet.body.enable = false;
+        
+        // Play barrier hit sound
+        this.playSound('barrier_hit');
         
         // Damage barrier
         let health = barrier.getData('health');
@@ -458,14 +649,21 @@ export class GameScene extends Phaser.Scene {
         
         if (health <= 0) {
             barrier.destroy();
+            this.playSound('barrier_destroy');
+            console.log('🛡️ Barrier destroyed!');
         } else {
-            // Visual damage effect
-            barrier.setTint(0x888888);
+            // Visual damage effect - make it more reddish
+            const damage = 5 - health;
+            const tint = Phaser.Display.Color.GetColor(255, 255 - damage * 40, 255 - damage * 40);
+            barrier.setTint(tint);
         }
+        
+        console.log(`🛡️ Barrier health: ${health}`);
     }
     
     alienBulletHitPlayer(bullet, player) {
         bullet.setActive(false).setVisible(false);
+        bullet.body.enable = false;
         this.playerHit();
     }
     
@@ -474,35 +672,127 @@ export class GameScene extends Phaser.Scene {
     }
     
     playerHit() {
+        // Prevent multiple hits in quick succession
+        if (this.player.getData('invulnerable')) {
+            return;
+        }
+        
+        console.log('💀 Player hit! Starting death sequence...');
+        
         this.gameState.lives--;
         this.updateUI();
+        
+        // Play player hit sound (single tone, shorter)
+        this.playSound('player_death', 0.15);
         
         console.log(`💀 Player hit! Lives remaining: ${this.gameState.lives}`);
         
         if (this.gameState.lives <= 0) {
+            // Game over - hide player and end game
+            this.player.setVisible(false);
             this.gameOver();
         } else {
-            // Brief invincibility
-            this.player.setTint(0xff0000);
-            this.time.delayedCall(1000, () => {
-                this.player.clearTint();
+            // Respawn sequence - hide player temporarily but DON'T disable physics
+            this.player.setVisible(false);
+            this.player.setData('invulnerable', true);
+            
+            // Stop any movement but keep physics enabled
+            if (this.player.body) {
+                this.player.setVelocityX(0);
+                this.player.setVelocityY(0);
+                // Keep physics body enabled!
+            }
+            
+            console.log('⏳ Player hidden, will respawn in 2 seconds...');
+            
+            // Respawn after 2 seconds
+            this.time.delayedCall(2000, () => {
+                this.respawnPlayer();
             });
         }
     }
     
+    respawnPlayer() {
+        // Check if aliens reached bottom while player was dead
+        const lowestAlien = this.aliens.children.size > 0 ? 
+            Math.max(...this.aliens.children.entries.map(alien => alien.y)) : 0;
+        
+        if (lowestAlien >= this.config.height - 100) {
+            console.log('👾 Aliens reached bottom during respawn!');
+            this.alienInvasionGameOver();
+            return;
+        }
+        
+        // Reset player position and physics
+        this.player.x = this.config.width / 2;
+        this.player.y = this.config.height - 50;
+        
+        // Ensure player physics body is properly enabled
+        if (this.player.body) {
+            this.player.body.enable = true;
+            this.player.setVelocityX(0);
+            this.player.setVelocityY(0);
+        }
+        
+        // Reset player state
+        this.playerState.isMovingLeft = false;
+        this.playerState.isMovingRight = false;
+        this.playerState.canFire = true;
+        
+        // Make player visible and flash for invincibility period
+        this.player.setVisible(true);
+        this.player.setData('invulnerable', true);
+        
+        console.log('🚀 Player respawning at center position...');
+        
+        // Flash effect for invincibility
+        let flashCount = 0;
+        const flashTimer = this.time.addEvent({
+            delay: 200,
+            repeat: 9, // Flash 10 times (2 seconds)
+            callback: () => {
+                flashCount++;
+                this.player.setVisible(flashCount % 2 === 0);
+            }
+        });
+        
+        // End invincibility after flashing
+        this.time.delayedCall(2000, () => {
+            this.player.setVisible(true);
+            this.player.setData('invulnerable', false);
+            console.log('✅ Player fully respawned! Movement and firing should work normally.');
+        });
+    }
+    
     addScore(points) {
-        this.gameState.score += points;
+        // Ensure points is a valid number
+        const validPoints = (typeof points === 'number' && !isNaN(points)) ? points : 0;
+        
+        this.gameState.score = (typeof this.gameState.score === 'number' && !isNaN(this.gameState.score)) ? this.gameState.score : 0;
+        this.gameState.score += validPoints;
+        
         this.updateUI();
         
         // Check for extra life
-        if (this.gameState.score % this.config.scoring.extraLifeScore === 0) {
+        if (this.gameState.score >= this.gameState.nextExtraLifeScore) {
             this.gameState.lives++;
+            this.gameState.nextExtraLifeScore += this.config.scoring.extraLifeScore; // Increment for next extra life
+            
+            // Cap lives at reasonable maximum to prevent UI overflow
+            const maxLives = 9;
+            if (this.gameState.lives > maxLives) {
+                this.gameState.lives = maxLives;
+            }
+            
             console.log('🎁 Extra life earned!');
         }
+        
+        console.log(`Score updated: +${validPoints} = ${this.gameState.score}`);
     }
     
     checkWaveComplete() {
-        if (this.aliens.children.size === 0) {
+        if (this.aliens.children.size === 0 && !this.gameState.isGameOver) {
+            console.log('🎯 All aliens destroyed! Starting next wave...');
             this.nextWave();
         }
     }
@@ -511,15 +801,43 @@ export class GameScene extends Phaser.Scene {
         this.gameState.wave++;
         this.addScore(this.config.scoring.waveBonus);
         
-        console.log(`🌊 Wave ${this.gameState.wave} starting!`);
+        console.log(`🌊 Wave ${this.gameState.wave} starting! Ramping up difficulty...`);
         
-        // Create new aliens
+        // Create new aliens (fresh formation)
         this.createAliens();
         
-        // Increase difficulty
-        this.alienMoveDelay = Math.max(200, this.alienMoveDelay * this.config.difficulty.speedIncreasePerWave);
+        // CRITICAL: Re-establish collision detection for new aliens
+        this.setupAlienCollisions();
+        
+        // Reset alien movement direction and position
+        this.alienDirection = 1;
+        
+        // AGGRESSIVE difficulty increase: speed up aliens significantly each wave
+        this.alienMoveDelay = Math.max(
+            this.config.difficulty.maxSpeed, 
+            this.alienMoveDelay * this.config.difficulty.speedIncreasePerWave
+        );
+        
+        // Increase alien firing frequency each wave (cap at maxFiringChance)
+        this.gameState.alienFiringChance = Math.min(
+            this.config.difficulty.maxFiringChance,
+            this.gameState.alienFiringChance * this.config.difficulty.fireRateIncreasePerWave
+        );
+        
+        // Regenerate barriers for new wave
+        this.barriers.clear(true, true);
+        this.createBarriers();
+        
+        // CRITICAL: Re-establish collision detection for new barriers
+        this.setupBarrierCollisions();
         
         this.updateUI();
+        
+        console.log(`🔥 Wave ${this.gameState.wave} ready:`, {
+            aliens: this.aliens.children.size,
+            speed: `${this.alienMoveDelay}ms`,
+            firingChance: `${(this.gameState.alienFiringChance * 100).toFixed(1)}%`
+        });
     }
     
     pauseGame() {
@@ -530,6 +848,12 @@ export class GameScene extends Phaser.Scene {
     
     gameOver() {
         this.gameState.isGameOver = true;
+        
+        // Stop all audio to prevent infinite sounds
+        if (this.audioContext) {
+            this.audioContext.suspend();
+        }
+        
         console.log('💀 Game Over! Final score:', this.gameState.score);
         
         // Show game over screen
@@ -570,12 +894,19 @@ export class GameScene extends Phaser.Scene {
     }
     
     getAlienPoints(alienType) {
-        switch (alienType) {
-            case 'alien_red': return this.config.scoring.alienPoints.red;
-            case 'alien_yellow': return this.config.scoring.alienPoints.yellow;
-            case 'alien_green': return this.config.scoring.alienPoints.green;
-            default: return this.config.scoring.alienPoints.green;
-        }
+        const points = (() => {
+            switch (alienType) {
+                case 'alien_red': return this.config?.scoring?.alienPoints?.red;
+                case 'alien_yellow': return this.config?.scoring?.alienPoints?.yellow;
+                case 'alien_green': return this.config?.scoring?.alienPoints?.green;
+                default: return this.config?.scoring?.alienPoints?.green;
+            }
+        })();
+        
+        // Ensure we always return a valid number
+        const finalPoints = (typeof points === 'number' && !isNaN(points)) ? points : 10;
+        
+        return finalPoints;
     }
     
     // Mobile touch control handlers

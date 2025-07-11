@@ -93,7 +93,7 @@ class SpaceInvadersApp {
         btnSettings?.addEventListener('click', () => this.showSettings());
         btnHelp?.addEventListener('click', () => this.showHelp());
         btnPlayAgain?.addEventListener('click', () => this.restartGame());
-        btnMainMenu?.addEventListener('click', () => this.showMainMenu());
+        btnMainMenu?.addEventListener('click', () => this.returnToMainMenu());
         btnCloseHelp?.addEventListener('click', () => this.hideHelp());
     }
     
@@ -291,9 +291,18 @@ class SpaceInvadersApp {
             await this.loadPhaserGame();
         }
         
-        // Start the game scene
+        // Stop any running scenes and start fresh game scene
         if (this.game) {
+            this.game.scene.stop('MenuScene');
             this.game.scene.start('GameScene');
+            
+            // Activate audio context with user gesture
+            setTimeout(() => {
+                const gameScene = this.game.scene.getScene('GameScene');
+                if (gameScene && gameScene.audioContext && gameScene.audioContext.state === 'suspended') {
+                    gameScene.audioContext.resume();
+                }
+            }, 100);
         }
     }
     
@@ -360,7 +369,30 @@ class SpaceInvadersApp {
     
     restartGame() {
         this.hideGameOver();
+        
+        // Reset audio context if it was suspended
+        if (this.game) {
+            const gameScene = this.game.scene.getScene('GameScene');
+            if (gameScene && gameScene.audioContext && gameScene.audioContext.state === 'suspended') {
+                gameScene.audioContext.resume();
+            }
+        }
+        
         this.startGame();
+    }
+    
+    returnToMainMenu() {
+        this.hideGameOver();
+        this.hideTouchControls();
+        
+        // Stop all scenes and return to menu
+        if (this.game) {
+            this.game.scene.stop('GameScene');
+            this.game.scene.stop('GameOverScene');
+            this.game.scene.start('MenuScene');
+        }
+        
+        this.showMainMenu();
     }
     
     // UI management methods
@@ -368,6 +400,10 @@ class SpaceInvadersApp {
         this.hideLoadingScreen();
         this.hideAllMenus();
         this.showGameUI(); // Show the game container
+        
+        // Load and display current high score
+        const currentHighScore = parseInt(localStorage.getItem('spaceinvaders_highscore') || '0');
+        this.updateHighScore(currentHighScore);
         
         // Start MenuScene in Phaser
         if (this.game) {
@@ -414,13 +450,65 @@ class SpaceInvadersApp {
         document.getElementById('help-panel').style.display = 'none';
     }
     
-    showGameOver(score) {
-        document.getElementById('final-score').textContent = score?.toLocaleString() || '0';
+    showGameOver(score, message = 'GAME OVER') {
+        // Ensure score is a valid number
+        const validScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;
+        document.getElementById('final-score').textContent = validScore.toLocaleString();
+        
+        // Update game over title if custom message provided
+        const gameOverTitle = document.querySelector('#game-over h2');
+        if (gameOverTitle) {
+            gameOverTitle.textContent = message;
+        }
+        
         document.getElementById('game-over').style.display = 'flex';
+        console.log('Game Over displayed with score:', validScore);
     }
     
     hideGameOver() {
         document.getElementById('game-over').style.display = 'none';
+    }
+    
+    // Game UI update methods
+    updateScore(score) {
+        const validScore = (typeof score === 'number' && !isNaN(score)) ? score : 0;
+        const scoreElement = document.getElementById('score');
+        if (scoreElement) {
+            scoreElement.textContent = validScore.toLocaleString();
+        }
+    }
+    
+    updateLives(lives) {
+        const validLives = (typeof lives === 'number' && !isNaN(lives)) ? Math.max(0, lives) : 0;
+        const livesContainer = document.getElementById('lives-container');
+        if (livesContainer) {
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < validLives; i++) {
+                const lifeSpan = document.createElement('span');
+                lifeSpan.className = 'life';
+                lifeSpan.textContent = '🚀';
+                livesContainer.appendChild(lifeSpan);
+            }
+        }
+    }
+    
+    updateWave(wave) {
+        const validWave = (typeof wave === 'number' && !isNaN(wave)) ? Math.max(1, wave) : 1;
+        const waveElement = document.getElementById('wave');
+        if (waveElement) {
+            waveElement.textContent = validWave;
+        }
+    }
+    
+    updateHighScore(highScore) {
+        const validHighScore = (typeof highScore === 'number' && !isNaN(highScore)) ? highScore : 0;
+        const highScoreElement = document.getElementById('high-score');
+        if (highScoreElement) {
+            highScoreElement.textContent = validHighScore.toLocaleString();
+        }
+        
+        // Also update localStorage
+        localStorage.setItem('spaceinvaders_highscore', validHighScore.toString());
     }
     
     // Settings management

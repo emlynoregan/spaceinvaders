@@ -54,10 +54,12 @@ export const gameConfig = {
     
     // Difficulty scaling
     difficulty: {
-        speedIncreasePerWave: 1.2,
-        fireRateIncreasePerWave: 1.1,
-        maxSpeed: 300,
-        minFireDelay: 500
+        speedIncreasePerWave: 0.8, // More aggressive: 20% faster each wave (was 1.2 = 20% slower)
+        fireRateIncreasePerWave: 1.3, // 30% more firing each wave  
+        maxSpeed: 100, // Minimum delay between alien moves (was 300, lower = faster)
+        minFireDelay: 500,
+        baseFiringChance: 0.08, // Starting firing chance (8%)
+        maxFiringChance: 0.25   // Cap at 25% firing chance per move
     },
     
     // Lives and scoring
