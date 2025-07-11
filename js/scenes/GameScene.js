@@ -64,7 +64,9 @@ export class GameScene extends Phaser.Scene {
             barrier_hit: [300],
             barrier_destroy: [150, 100],
             alien_move: [150],
-            ufo: [400, 450, 400, 450]
+            ufo: [400, 450, 400, 450],
+            mothership: [300, 350, 300, 350, 400, 450], // UFO flying sound
+            mothership_hit: [500, 400, 300, 200, 100] // Mothership destruction
         };
     }
     
@@ -167,6 +169,9 @@ export class GameScene extends Phaser.Scene {
         
         // Barrier (pixelated defensive wall)
         this.createBarrierSprite();
+        
+        // Mothership/UFO (bonus target)
+        this.createMothershipSprite();
     }
     
     createAlienSprite(textureName, color, type) {
@@ -234,6 +239,43 @@ export class GameScene extends Phaser.Scene {
         console.log('🧱 Simple 5x5 barrier pixel texture created');
     }
     
+    createMothershipSprite() {
+        const graphics = this.add.graphics();
+        
+        // Classic UFO design - silver/white mothership
+        graphics.fillStyle(0xcccccc); // Light gray base
+        
+        // Main body (elliptical)
+        graphics.fillEllipse(24, 8, 40, 12); // Main hull
+        
+        // Top dome
+        graphics.fillStyle(0xffffff); // Bright white dome
+        graphics.fillEllipse(24, 6, 24, 8); // Dome
+        
+        // Bottom details
+        graphics.fillStyle(0x888888); // Darker gray
+        graphics.fillRect(8, 10, 4, 2);  // Left thruster
+        graphics.fillRect(20, 12, 4, 2); // Left-center thruster
+        graphics.fillRect(24, 12, 4, 2); // Center thruster
+        graphics.fillRect(28, 12, 4, 2); // Right-center thruster
+        graphics.fillRect(36, 10, 4, 2); // Right thruster
+        
+        // Lights/windows
+        graphics.fillStyle(0x00ffff); // Cyan lights
+        graphics.fillCircle(16, 6, 2); // Left light
+        graphics.fillCircle(24, 6, 2); // Center light
+        graphics.fillCircle(32, 6, 2); // Right light
+        
+        // Antenna
+        graphics.fillStyle(0xffffff);
+        graphics.fillRect(23, 2, 2, 4); // Antenna
+        
+        graphics.generateTexture('mothership', 48, 16);
+        graphics.destroy();
+        
+        console.log('🛸 Mothership sprite created');
+    }
+    
     create() {
         // Create starfield background
         this.createStarfield();
@@ -243,6 +285,7 @@ export class GameScene extends Phaser.Scene {
         this.createBulletGroups(); // Create bullets before setting up physics
         this.createAliens();
         this.createBarriers();
+        this.createMothership();
         
         // Setup input
         this.setupInput();
@@ -395,6 +438,21 @@ export class GameScene extends Phaser.Scene {
         console.log('🔫 Bullet groups created');
     }
     
+    createMothership() {
+        // Initialize mothership system
+        this.mothership = null;
+        this.mothershipState = {
+            isActive: false,
+            lastSpawnTime: 0,
+            spawnDelay: Phaser.Math.Between(15000, 30000), // 15-30 seconds between spawns
+            speed: 80, // Pixels per second
+            points: [50, 100, 150, 300], // Random bonus points
+            direction: 1 // 1 for left-to-right, -1 for right-to-left
+        };
+        
+        console.log('🛸 Mothership system initialized');
+    }
+    
     setupInput() {
         // Desktop keyboard controls
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -443,6 +501,13 @@ export class GameScene extends Phaser.Scene {
         console.log('👾 Alien collision detection established');
     }
     
+    setupMothershipCollision() {
+        // Only set up collision if mothership exists
+        if (this.mothership && this.mothership.active) {
+            this.physics.add.overlap(this.playerBullets, this.mothership, this.playerBulletHitMothership, null, this);
+        }
+    }
+    
     setupBarrierCollisions() {
         // Player bullets vs barriers
         this.physics.add.overlap(this.playerBullets, this.barriers, this.bulletHitBarrier, null, this);
@@ -460,6 +525,7 @@ export class GameScene extends Phaser.Scene {
         
         this.handlePlayerInput();
         this.updateAliens(time);
+        this.updateMothership(time, delta);
         this.updateBullets();
         this.checkWaveComplete();
         
@@ -504,6 +570,68 @@ export class GameScene extends Phaser.Scene {
             // Randomly fire alien bullets
             this.alienFire();
         }
+    }
+    
+    updateMothership(time, delta) {
+        // Check if it's time to spawn a new mothership
+        if (!this.mothershipState.isActive && 
+            time - this.mothershipState.lastSpawnTime > this.mothershipState.spawnDelay) {
+            this.spawnMothership();
+        }
+        
+        // Update existing mothership
+        if (this.mothership && this.mothership.active) {
+            this.mothership.x += this.mothershipState.speed * this.mothershipState.direction * (delta / 1000);
+            
+            // Remove mothership if it goes off screen
+            if ((this.mothershipState.direction > 0 && this.mothership.x > this.config.width + 50) ||
+                (this.mothershipState.direction < 0 && this.mothership.x < -50)) {
+                this.removeMothership();
+            }
+        }
+    }
+    
+    spawnMothership() {
+        // Alternate direction each spawn
+        this.mothershipState.direction *= -1;
+        
+        // Position based on direction
+        const startX = this.mothershipState.direction > 0 ? -50 : this.config.width + 50;
+        const y = 60; // Top of screen, below HUD
+        
+        // Create mothership sprite
+        this.mothership = this.physics.add.sprite(startX, y, 'mothership');
+        this.mothership.setImmovable(true);
+        this.mothership.body.setSize(48, 16);
+        
+        // Set bonus points (random)
+        const bonusPoints = Phaser.Utils.Array.GetRandom(this.mothershipState.points);
+        this.mothership.setData('points', bonusPoints);
+        
+        // Update state
+        this.mothershipState.isActive = true;
+        this.mothershipState.lastSpawnTime = this.time.now;
+        
+        // Set next spawn delay (15-30 seconds)
+        this.mothershipState.spawnDelay = Phaser.Math.Between(15000, 30000);
+        
+        // Set up collision detection
+        this.setupMothershipCollision();
+        
+        // Play mothership sound
+        this.playSound('mothership', 0.15);
+        
+        console.log(`🛸 Mothership spawned! Direction: ${this.mothershipState.direction > 0 ? 'L→R' : 'R→L'}, Bonus: ${bonusPoints} points`);
+    }
+    
+    removeMothership() {
+        if (this.mothership) {
+            this.mothership.destroy();
+            this.mothership = null;
+        }
+        this.mothershipState.isActive = false;
+        
+        console.log('🛸 Mothership removed');
     }
     
     moveAliens() {
@@ -694,6 +822,66 @@ export class GameScene extends Phaser.Scene {
         alien.destroy();
         
         console.log(`💥 Alien destroyed! +${points} points, new score: ${this.gameState.score}`);
+    }
+    
+    playerBulletHitMothership(bullet, mothership) {
+        console.log('🎯 Bullet hit mothership!');
+        
+        bullet.setActive(false).setVisible(false);
+        bullet.body.enable = false;
+        
+        // Play mothership hit sound
+        this.playSound('mothership_hit', 0.25);
+        
+        // Add bonus score
+        const bonusPoints = mothership.getData('points');
+        this.addScore(bonusPoints);
+        
+        console.log(`🛸💥 Mothership destroyed! +${bonusPoints} bonus points, new score: ${this.gameState.score}`);
+        
+        // Create visual effect for mothership destruction
+        this.createMothershipExplosion(mothership.x, mothership.y, bonusPoints);
+        
+        // Remove the mothership
+        this.removeMothership();
+    }
+    
+    createMothershipExplosion(x, y, points) {
+        // Create explosion visual effect
+        const explosion = this.add.circle(x, y, 30, 0xffffff, 0.8);
+        explosion.setDepth(100);
+        
+        // Show bonus points
+        const pointsText = this.add.text(x, y - 30, `+${points}`, {
+            fontSize: '18px',
+            fill: '#ffff00',
+            fontFamily: 'Courier New',
+            fontWeight: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        });
+        pointsText.setOrigin(0.5);
+        pointsText.setDepth(101);
+        
+        // Animate explosion and points
+        this.tweens.add({
+            targets: explosion,
+            scaleX: 2,
+            scaleY: 2,
+            alpha: 0,
+            duration: 400,
+            ease: 'Power2',
+            onComplete: () => explosion.destroy()
+        });
+        
+        this.tweens.add({
+            targets: pointsText,
+            y: y - 60,
+            alpha: 0,
+            duration: 800,
+            ease: 'Power2',
+            onComplete: () => pointsText.destroy()
+        });
     }
     
     bulletHitBarrier(bullet, barrierPixel) {
@@ -934,6 +1122,10 @@ export class GameScene extends Phaser.Scene {
         // CRITICAL: Re-establish collision detection for new barriers
         this.setupBarrierCollisions();
         
+        // Reset mothership for new wave
+        this.removeMothership();
+        this.mothershipState.lastSpawnTime = this.time.now;
+        
         this.updateUI();
         
         // Reset transition flag now that new wave has started
@@ -1051,5 +1243,10 @@ export class GameScene extends Phaser.Scene {
         if (this.touchControls) {
             this.touchControls.destroy();
         }
+        
+        // Clean up mothership
+        this.removeMothership();
+        
+        console.log('🧹 GameScene destroyed and cleaned up');
     }
 } 
