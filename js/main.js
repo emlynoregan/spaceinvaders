@@ -380,16 +380,21 @@ class SpaceInvadersApp {
     }
     
     returnToMainMenu() {
+        console.log('🏠 Return to Main Menu clicked');
+        
         this.hideGameOver();
         this.hideTouchControls();
+        this.hideWaveAnnouncement(); // Ensure wave announcement is hidden too
         
         // Stop all scenes and return to menu
         if (this.game) {
+            console.log('🎮 Stopping game scenes...');
             this.game.scene.stop('GameScene');
             this.game.scene.stop('GameOverScene');
             this.game.scene.start('MenuScene');
         }
         
+        console.log('🏠 Showing main menu...');
         this.showMainMenu();
     }
     
@@ -434,6 +439,13 @@ class SpaceInvadersApp {
         const touchControls = document.getElementById('touch-controls');
         if (touchControls) {
             touchControls.style.display = 'block';
+        }
+    }
+    
+    hideTouchControls() {
+        const touchControls = document.getElementById('touch-controls');
+        if (touchControls) {
+            touchControls.style.display = 'none';
         }
     }
     
