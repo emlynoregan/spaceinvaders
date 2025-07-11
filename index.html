@@ -42,23 +42,24 @@
 
     <!-- Mobile Touch Controls Overlay -->
     <div id="touch-controls" class="touch-controls" style="display: none;">
-        <!-- Virtual buttons for alternative control scheme -->
+        <!-- Virtual buttons optimized for mobile gaming -->
         <div class="control-buttons">
-            <button id="btn-left" class="control-btn btn-left" data-action="left">
-                <span>◀</span>
-            </button>
-            <button id="btn-right" class="control-btn btn-right" data-action="right">
-                <span>▶</span>
-            </button>
-            <button id="btn-fire" class="control-btn btn-fire" data-action="fire">
-                <span>🔥</span>
-            </button>
-        </div>
-        
-        <!-- Touch zones for gesture control -->
-        <div class="touch-zones">
-            <div id="movement-zone" class="movement-zone"></div>
-            <div id="fire-zone" class="fire-zone"></div>
+            <!-- Left side: Movement controls for left thumb -->
+            <div class="movement-controls">
+                <button id="btn-left" class="control-btn" data-action="left">
+                    <span>◀</span>
+                </button>
+                <button id="btn-right" class="control-btn" data-action="right">
+                    <span>▶</span>
+                </button>
+            </div>
+            
+            <!-- Right side: Fire control for right thumb -->
+            <div class="fire-controls">
+                <button id="btn-fire" class="control-btn btn-fire" data-action="fire">
+                    <span>🔥</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -121,11 +122,13 @@
             <h3>⚙️ SETTINGS</h3>
             
             <div class="setting-group">
-                <label>Control Type (Mobile)</label>
+                <label>Mobile Controls</label>
                 <select id="control-type">
-                    <option value="gesture">Touch & Drag</option>
                     <option value="buttons">Virtual Buttons</option>
                 </select>
+                <small style="color: #00aa00; display: block; margin-top: 5px;">
+                    Left thumb: movement • Right thumb: fire
+                </small>
             </div>
             
             <div class="setting-group">
@@ -169,9 +172,9 @@
             <div class="help-section">
                 <h4>Mobile Controls:</h4>
                 <ul>
-                    <li><strong>Move:</strong> Touch and drag anywhere</li>
-                    <li><strong>Fire:</strong> Tap anywhere (quick tap)</li>
-                    <li><strong>Alt:</strong> Use virtual buttons</li>
+                    <li><strong>Left thumb:</strong> ◀ ▶ buttons to move</li>
+                    <li><strong>Right thumb:</strong> 🔥 button to fire</li>
+                    <li><strong>Menu:</strong> ☰ button to pause</li>
                 </ul>
             </div>
             

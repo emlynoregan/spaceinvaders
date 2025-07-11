@@ -9,11 +9,14 @@
     bottom: 0;
     pointer-events: none;
     z-index: 50;
+    display: block !important; /* Force display for debugging */
 }
 
 .touch-controls.active {
     pointer-events: all;
 }
+
+
 
 /* Virtual Control Buttons */
 .control-buttons {
@@ -26,12 +29,25 @@
     align-items: flex-end;
     justify-content: space-between;
     padding: 20px;
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.3s ease;
+    z-index: 1000;
 }
 
 .control-buttons.visible {
     opacity: 1;
+}
+
+/* Mobile layout optimization */
+@media (max-width: 768px) {
+    .control-buttons {
+        opacity: 1 !important;
+        padding: 15px;
+    }
+    
+    .movement-controls {
+        gap: 10px;
+    }
 }
 
 .control-btn {
@@ -58,12 +74,17 @@
     transform: scale(0.95);
 }
 
-.btn-left {
-    margin-right: auto;
+/* Left side: Movement controls */
+.movement-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
 }
 
-.btn-right {
-    margin-right: 20px;
+/* Right side: Fire control */
+.fire-controls {
+    display: flex;
+    align-items: center;
 }
 
 .btn-fire {
@@ -82,48 +103,7 @@
     box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
 }
 
-/* Touch Zones for Gesture Control */
-.touch-zones {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: none;
-}
 
-.touch-zones.active {
-    display: block;
-}
-
-.movement-zone {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: transparent;
-}
-
-.fire-zone {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 40%;
-    background: transparent;
-}
-
-/* Visual feedback for touch zones (debug mode) */
-.touch-zones.debug .movement-zone {
-    background: rgba(0, 255, 0, 0.1);
-    border-top: 1px dashed rgba(0, 255, 0, 0.3);
-}
-
-.touch-zones.debug .fire-zone {
-    background: rgba(255, 0, 0, 0.1);
-    border-bottom: 1px dashed rgba(255, 0, 0, 0.3);
-}
 
 /* Touch Feedback Effects */
 .touch-feedback {

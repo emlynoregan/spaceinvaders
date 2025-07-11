@@ -9,6 +9,13 @@ class SpaceInvadersApp {
         this.currentSettings = this.loadSettings();
         this.isGameLoaded = false;
         
+        // Debug logging
+        console.log('🚀 SpaceInvadersApp constructor');
+        console.log('📱 Is Mobile:', this.isMobile);
+        console.log('⚙️ User Agent:', navigator.userAgent);
+        console.log('👆 Touch Support:', 'ontouchstart' in window);
+        console.log('📐 Screen Size:', window.innerWidth, 'x', window.innerHeight);
+        
         this.init();
     }
     
@@ -134,11 +141,15 @@ class SpaceInvadersApp {
     }
     
     initializeMobileFeatures() {
+        console.log('📱 Initializing mobile features...');
+        
         // Setup touch controls
         this.initializeTouchControls();
         
         // Prevent mobile browser behaviors
         this.preventMobileBrowserBehaviors();
+        
+        console.log('📱 Mobile features initialized');
     }
     
     initializeTouchControls() {
@@ -364,15 +375,9 @@ class SpaceInvadersApp {
             const controlButtons = document.querySelector('.control-buttons');
             const touchZones = document.querySelector('.touch-zones');
             
-            if (this.currentSettings.controlType === 'buttons') {
-                controlButtons?.classList.add('visible');
-                touchZones?.classList.remove('active');
-                console.log('📱 Virtual buttons enabled');
-            } else {
-                controlButtons?.classList.remove('visible');
-                touchZones?.classList.add('active');
-                console.log('📱 Gesture controls enabled');
-            }
+            // Always use virtual buttons
+            controlButtons?.classList.add('visible');
+            console.log('📱 Virtual buttons enabled');
         }
     }
     
@@ -524,7 +529,7 @@ class SpaceInvadersApp {
     // Settings management
     loadSettings() {
         const defaultSettings = {
-            controlType: 'gesture',
+            controlType: 'buttons',
             sfxVolume: 70,
             musicVolume: 50,
             hapticFeedback: true

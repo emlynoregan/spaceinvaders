@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile Controls Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #00ff00;
+            font-family: monospace;
+        }
+        .test-area {
+            border: 2px solid #00ff00;
+            min-height: 200px;
+            margin: 20px 0;
+            padding: 10px;
+        }
+        .status {
+            background: #001100;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #00ff00;
+        }
+        .control-test {
+            background: #002200;
+            padding: 20px;
+            margin: 10px 0;
+            border: 1px solid #00ff00;
+        }
+        button {
+            background: #004400;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .touch-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: rgba(0, 255, 0, 0.1);
+            border-top: 1px solid #00ff00;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+            font-size: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .control-btn:active {
+            background: rgba(0, 255, 0, 0.5);
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Mobile Controls Test</h1>
+    
+    <div class="status" id="device-info">
+        <h3>Device Detection:</h3>
+        <div id="device-details">Loading...</div>
+    </div>
+    
+    <div class="status" id="touch-support">
+        <h3>Touch Support:</h3>
+        <div id="touch-details">Loading...</div>
+    </div>
+    
+    <div class="test-area" id="touch-log">
+        <h3>Touch Events Log:</h3>
+        <div id="log-content">Touch the screen to see events...</div>
+    </div>
+    
+    <div class="control-test">
+        <h3>Button Test:</h3>
+        <button onclick="testButton('Desktop Button')">Test Button</button>
+    </div>
+    
+    <!-- Mobile Touch Controls -->
+    <div class="touch-controls">
+        <div class="control-btn" id="btn-left">◀</div>
+        <div class="control-btn" id="btn-right">▶</div>
+        <div class="control-btn" id="btn-fire">🔥</div>
+    </div>
+    
+    <script>
+        let logCount = 0;
+        
+        function log(message) {
+            logCount++;
+            const logContent = document.getElementById('log-content');
+            logContent.innerHTML = `${logCount}: ${message}<br>` + logContent.innerHTML;
+            console.log(message);
+        }
+        
+        function testButton(name) {
+            log(`${name} clicked!`);
+        }
+        
+        // Device detection
+        function detectDevice() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                             ('ontouchstart' in window) ||
+                             (navigator.maxTouchPoints > 0);
+            
+            const deviceDetails = document.getElementById('device-details');
+            deviceDetails.innerHTML = `
+                <strong>Is Mobile:</strong> ${isMobile}<br>
+                <strong>User Agent:</strong> ${navigator.userAgent}<br>
+                <strong>Touch Support:</strong> ${'ontouchstart' in window}<br>
+                <strong>Max Touch Points:</strong> ${navigator.maxTouchPoints}<br>
+                <strong>Screen Size:</strong> ${window.innerWidth} x ${window.innerHeight}<br>
+                <strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio}
+            `;
+            
+            log(`Device detected: Mobile=${isMobile}`);
+        }
+        
+        // Touch support test
+        function testTouchSupport() {
+            const touchDetails = document.getElementById('touch-details');
+            const events = [];
+            
+            if ('ontouchstart' in window) events.push('touchstart');
+            if ('ontouchmove' in window) events.push('touchmove');
+            if ('ontouchend' in window) events.push('touchend');
+            if ('onpointerdown' in window) events.push('pointerdown');
+            
+            touchDetails.innerHTML = `
+                <strong>Touch Events:</strong> ${events.join(', ')}<br>
+                <strong>Vibration:</strong> ${'vibrate' in navigator}<br>
+                <strong>Orientation:</strong> ${screen.orientation ? screen.orientation.type : 'unknown'}
+            `;
+        }
+        
+        // Touch event logging
+        function setupTouchLogging() {
+            const body = document.body;
+            
+            body.addEventListener('touchstart', (e) => {
+                log(`TouchStart: ${e.touches.length} touches at (${e.touches[0].clientX}, ${e.touches[0].clientY})`);
+            });
+            
+            body.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                log(`TouchMove: to (${e.touches[0].clientX}, ${e.touches[0].clientY})`);
+            });
+            
+            body.addEventListener('touchend', (e) => {
+                log(`TouchEnd: ${e.changedTouches.length} touches ended`);
+            });
+            
+            // Fallback for mouse events
+            body.addEventListener('mousedown', (e) => {
+                log(`MouseDown: at (${e.clientX}, ${e.clientY})`);
+            });
+        }
+        
+        // Virtual button setup
+        function setupVirtualButtons() {
+            const buttons = ['btn-left', 'btn-right', 'btn-fire'];
+            
+            buttons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+                
+                const action = btnId.replace('btn-', '');
+                
+                // Touch events
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    log(`Virtual button ${action} pressed!`);
+                    btn.style.background = 'rgba(0, 255, 0, 0.8)';
+                    
+                    // Vibration feedback
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                });
+                
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    log(`Virtual button ${action} released!`);
+                    btn.style.background = 'rgba(0, 255, 0, 0.2)';
+                });
+                
+                // Mouse events for desktop testing
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    log(`Virtual button ${action} mouse pressed!`);
+                    btn.style.background = 'rgba(0, 255, 0, 0.8)';
+                });
+                
+                btn.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    log(`Virtual button ${action} mouse released!`);
+                    btn.style.background = 'rgba(0, 255, 0, 0.2)';
+                });
+            });
+        }
+        
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Test page loaded!');
+            detectDevice();
+            testTouchSupport();
+            setupTouchLogging();
+            setupVirtualButtons();
+        });
+        
+        // Error handling
+        window.addEventListener('error', (e) => {
+            log(`JavaScript Error: ${e.message} at ${e.filename}:${e.lineno}`);
+        });
+        
+        window.addEventListener('unhandledrejection', (e) => {
+            log(`Unhandled Promise Rejection: ${e.reason}`);
+        });
+    </script>
+</body>
+</html> 

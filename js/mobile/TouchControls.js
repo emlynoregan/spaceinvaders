@@ -4,18 +4,7 @@ export class TouchControls {
         this.config = config;
         this.gameScene = gameScene;
         this.isActive = false;
-        this.currentControlType = config.mobile.touchControlType;
-        
-        // Touch state tracking
-        this.touchState = {
-            isMoving: false,
-            isFiring: false,
-            currentX: 0,
-            startX: 0,
-            startY: 0,
-            startTime: 0,
-            isDragging: false
-        };
+        this.currentControlType = 'buttons'; // Always use buttons now
         
         // Virtual button elements
         this.buttons = {
@@ -37,16 +26,11 @@ export class TouchControls {
         // Get touch control elements
         this.touchControlsContainer = document.getElementById('touch-controls');
         this.controlButtons = this.touchControlsContainer?.querySelector('.control-buttons');
-        this.touchZones = this.touchControlsContainer?.querySelector('.touch-zones');
         
         // Get individual buttons
         this.buttons.left = document.getElementById('btn-left');
         this.buttons.right = document.getElementById('btn-right');
         this.buttons.fire = document.getElementById('btn-fire');
-        
-        // Get touch zones
-        this.movementZone = document.getElementById('movement-zone');
-        this.fireZone = document.getElementById('fire-zone');
     }
     
     bindEvents() {
@@ -60,12 +44,6 @@ export class TouchControls {
         
         if (this.buttons.fire) {
             this.bindButtonEvents(this.buttons.fire, 'fire');
-        }
-        
-        // Bind gesture events to the game container
-        const gameContainer = document.getElementById('game-container');
-        if (gameContainer) {
-            this.bindGestureEvents(gameContainer);
         }
     }
     
@@ -105,88 +83,7 @@ export class TouchControls {
         button.addEventListener('mouseleave', handleEnd);
     }
     
-    bindGestureEvents(container) {
-        const handleTouchStart = (e) => {
-            if (this.currentControlType !== 'gesture') return;
-            
-            e.preventDefault();
-            
-            const touch = e.touches[0];
-            this.touchState.startX = touch.clientX;
-            this.touchState.startY = touch.clientY;
-            this.touchState.startTime = Date.now();
-            this.touchState.isDragging = false;
-            this.touchState.currentX = touch.clientX;
-            
-            // Show visual feedback
-            this.showTouchFeedback(touch.clientX, touch.clientY);
-            
-            // Determine if touch is in movement zone or fire zone
-            const containerRect = container.getBoundingClientRect();
-            const relativeY = (touch.clientY - containerRect.top) / containerRect.height;
-            
-            if (relativeY > 0.6) {
-                // Lower 40% is movement zone
-                this.touchState.isMoving = true;
-            } else {
-                // Upper 60% is fire zone
-                this.touchState.isFiring = true;
-            }
-        };
-        
-        const handleTouchMove = (e) => {
-            if (this.currentControlType !== 'gesture') return;
-            
-            e.preventDefault();
-            
-            const touch = e.touches[0];
-            const deltaX = Math.abs(touch.clientX - this.touchState.startX);
-            const deltaY = Math.abs(touch.clientY - this.touchState.startY);
-            
-            // If movement exceeds threshold, consider it a drag
-            if (deltaX > this.config.mobile.gestureThreshold || 
-                deltaY > this.config.mobile.gestureThreshold) {
-                this.touchState.isDragging = true;
-            }
-            
-            // Handle player movement if in movement zone and dragging horizontally
-            if (this.touchState.isMoving && deltaX > this.config.mobile.gestureThreshold) {
-                const containerRect = container.getBoundingClientRect();
-                const relativeX = (touch.clientX - containerRect.left) / containerRect.width;
-                const gameX = relativeX * this.config.width;
-                
-                this.handlePlayerMovement(gameX);
-                this.touchState.currentX = touch.clientX;
-            }
-        };
-        
-        const handleTouchEnd = (e) => {
-            if (this.currentControlType !== 'gesture') return;
-            
-            e.preventDefault();
-            
-            const touchDuration = Date.now() - this.touchState.startTime;
-            
-            // If it was a quick tap in fire zone and not a drag, fire
-            if (this.touchState.isFiring && 
-                touchDuration < this.config.mobile.fireTapDuration && 
-                !this.touchState.isDragging) {
-                this.handlePlayerFire();
-                this.triggerHapticFeedback('medium');
-            }
-            
-            // Reset touch state
-            this.touchState.isMoving = false;
-            this.touchState.isFiring = false;
-            this.touchState.isDragging = false;
-        };
-        
-        // Bind touch events
-        container.addEventListener('touchstart', handleTouchStart, { passive: false });
-        container.addEventListener('touchmove', handleTouchMove, { passive: false });
-        container.addEventListener('touchend', handleTouchEnd, { passive: false });
-        container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-    }
+
     
     handleButtonPress(action, pressed) {
         switch (action) {
@@ -257,40 +154,14 @@ export class TouchControls {
     }
     
     setControlType(type) {
-        this.currentControlType = type;
-        
-        if (!this.touchControlsContainer) return;
-        
-        if (type === 'buttons') {
-            this.showVirtualButtons();
-        } else {
-            this.showGestureControls();
-        }
+        this.currentControlType = 'buttons'; // Always use buttons
+        this.showVirtualButtons();
     }
     
     showVirtualButtons() {
         if (this.controlButtons) {
             this.controlButtons.classList.add('visible');
-            this.controlButtons.style.opacity = this.config.mobile.buttonOpacity;
-        }
-        
-        if (this.touchZones) {
-            this.touchZones.classList.remove('active');
-        }
-    }
-    
-    showGestureControls() {
-        if (this.controlButtons) {
-            this.controlButtons.classList.remove('visible');
-        }
-        
-        if (this.touchZones) {
-            this.touchZones.classList.add('active');
-            
-            // Show debug zones if enabled
-            if (this.config.debug.showTouchZones) {
-                this.touchZones.classList.add('debug');
-            }
+            this.controlButtons.style.opacity = this.config.mobile.buttonOpacity || 0.8;
         }
     }
     
